@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Filament\Resources\DossierResource\Pages;
+
+use App\Events\DocumentArchived;
+use App\Filament\Resources\DossierResource;
+use App\Models\ActivityLog;
+use App\Models\Depense;
+use App\Models\Exercice;
+use App\Services\PdfMerger;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Storage;
+
+class CreateDossier extends CreateRecord
+{
+    protected static string $resource = DossierResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $allPdfPaths = [];
+
+        // ═══ SOURCE 1 : Fichiers scannés via Larascan (chemin dans hidden field) ═══
+        if (!empty($data['fichiers_pdf_paths'])) {
+            foreach (explode(',', $data['fichiers_pdf_paths']) as $p) {
+                $p = trim($p);
+                if (!$p) continue;
+
+                $abs = Storage::disk('public')->path($p);
+                if (file_exists($abs)) {
+                    // Convertir les images JPG en PDF si nécessaire
+                    if (preg_match('/\.(jpg|jpeg|png)$/i', $p)) {
+                        $pdfPath = $this->convertImageToPdf($abs);
+                        if ($pdfPath) $allPdfPaths[] = $pdfPath;
+                    } else {
+                        $allPdfPaths[] = $abs;
+                    }
+                }
+            }
+        }
+
+        // ═══ SOURCE 2 : Fichiers scannés en session Larascan ═══
+        $sessionKeys = collect(session()->all())
+            ->filter(fn ($v, $k) => str_starts_with($k, 'larascan_files_') && is_array($v));
+
+        foreach ($sessionKeys as $key => $files) {
+            foreach ($files as $f) {
+                $path = $f['path'] ?? '';
+                if ($path && Storage::disk('public')->exists($path)) {
+                    $abs = Storage::disk('public')->path($path);
+                    if (preg_match('/\.(jpg|jpeg|png)$/i', $path)) {
+                        $pdfPath = $this->convertImageToPdf($abs);
+                        if ($pdfPath) $allPdfPaths[] = $pdfPath;
+                    } else {
+                        $allPdfPaths[] = $abs;
+                    }
+                }
+            }
+            session()->forget($key);
+        }
+
+        // ═══ SOURCE 3 : Upload classique FileUpload ═══
+        if (!empty($data['fichiers_upload'])) {
+            foreach ($data['fichiers_upload'] as $f) {
+                $abs = Storage::disk('public')->path($f);
+                if (file_exists($abs)) $allPdfPaths[] = $abs;
+            }
+        }
+
+        // ═══ FUSION + COMPRESSION en un seul PDF selon cahier de charge ═══
+        if (!empty($allPdfPaths)) {
+            $dep = Depense::find($data['depense_id']);
+            $ex = Exercice::find($data['exercice_id']);
+            $type = $dep?->type ?? 'FONCTIONNEMENT';
+            $annee = $ex?->annee ?? date('Y');
+            $fn = str_replace(['/', '\\', ' '], '_', $data['ordre_paiement'] ?? 'DOC');
+
+            // Stockage : DOSSIER_ARCHIVE/{TYPE}/{ANNEE}/{filename}_{TYPE}_{ANNEE}.pdf
+            $rel = PdfMerger::merge($allPdfPaths, $fn, $type, (string) $annee);
+            if ($rel) {
+                $data['fichier_path'] = $rel;
+
+                // Compresser si Ghostscript disponible
+                $this->compressPdf($rel);
+            }
+
+            // Nettoyage des fichiers temporaires
+            PdfMerger::cleanupTemp($allPdfPaths);
+        }
+
+        unset($data['fichiers_upload'], $data['fichiers_pdf_paths'], $data['larascan_scanner']);
+        return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        $d = $this->record;
+        ActivityLog::logActivity(
+            'creation',
+            "Dossier {$d->ordre_paiement} créé — {$d->beneficiaire}",
+            $d, null, $d->toArray()
+        );
+
+        if ($d->fichier_path) {
+            event(new DocumentArchived($d));
+            Notification::make()
+                ->title('✅ Dossier créé — PDF fusionné et archivé')
+                ->body($d->ordre_paiement . ' • ' . $d->beneficiaire)
+                ->success()->duration(4000)->send();
+        } else {
+            Notification::make()
+                ->title('⚠️ Dossier créé sans document PDF')
+                ->warning()->duration(4000)->send();
+        }
+    }
+
+    /**
+     * Convertit une image (JPG/PNG) en PDF via Imagick ou GD
+     */
+    private function convertImageToPdf(string $imagePath): ?string
+    {
+        $pdfPath = preg_replace('/\.(jpg|jpeg|png)$/i', '.pdf', $imagePath);
+
+        // Méthode 1 : Imagick
+        if (class_exists(\Imagick::class)) {
+            try {
+                $im = new \Imagick($imagePath);
+                $im->setImageFormat('pdf');
+                $im->setImageCompressionQuality(80);
+                $im->writeImage($pdfPath);
+                $im->destroy();
+                return $pdfPath;
+            } catch (\Exception $e) {}
+        }
+
+        // Méthode 2 : img2pdf (Python)
+        $cmd = "img2pdf \"{$imagePath}\" -o \"{$pdfPath}\" 2>&1";
+        exec($cmd, $out, $code);
+        if ($code === 0 && file_exists($pdfPath)) return $pdfPath;
+
+        // Méthode 3 : On garde l'image telle quelle (sera ignorée si non-PDF)
+        // Copier comme .pdf avec un wrapper minimal n'est pas fiable,
+        // donc on retourne null et on log
+        \Log::warning("Impossible de convertir {$imagePath} en PDF");
+        return null;
+    }
+
+    /**
+     * Compresse le PDF final via Ghostscript si disponible
+     */
+    private function compressPdf(string $relativePath): void
+    {
+        $abs = Storage::disk('public')->path($relativePath);
+        if (!file_exists($abs)) return;
+
+        $compressed = $abs . '.compressed.pdf';
+        $gs = $this->findGhostscript();
+        if (!$gs) return;
+
+        $cmd = "\"{$gs}\" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 "
+             . "-dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH "
+             . "-sOutputFile=\"{$compressed}\" \"{$abs}\" 2>&1";
+
+        exec($cmd, $out, $code);
+
+        if ($code === 0 && file_exists($compressed) && filesize($compressed) < filesize($abs)) {
+            rename($compressed, $abs);
+        } else {
+            @unlink($compressed);
+        }
+    }
+
+    private function findGhostscript(): ?string
+    {
+        $paths = [
+            'C:\\Program Files\\gs\\gs10.04.0\\bin\\gswin64c.exe',
+            'C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe',
+            'C:\\Program Files (x86)\\gs\\gs10.04.0\\bin\\gswin32c.exe',
+            '/usr/bin/gs', '/usr/local/bin/gs',
+        ];
+        foreach ($paths as $p) { if (file_exists($p)) return $p; }
+        $w = PHP_OS_FAMILY === 'Windows' ? 'where gswin64c 2>NUL' : 'which gs 2>/dev/null';
+        $r = trim(shell_exec($w) ?? '');
+        return $r ?: null;
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+}

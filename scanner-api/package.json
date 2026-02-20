@@ -1,0 +1,14 @@
+{
+    "name": "naps2-scanner-bridge",
+    "version": "1.0.0",
+    "description": "Service local NAPS2 Scanner Bridge pour ArchiCompta",
+    "main": "naps2-service.js",
+    "scripts": {
+        "start": "node naps2-service.js",
+        "dev": "node naps2-service.js"
+    },
+    "dependencies": {
+        "express": "^4.21.0",
+        "cors": "^2.8.5"
+    }
+}
