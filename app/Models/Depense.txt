@@ -19,28 +19,8 @@ class Depense extends Model
     protected static function boot()
     {
         parent::boot();
-
-        // Auto-calculer la classe à la création/modification
         static::creating(fn ($d) => $d->classe = self::getClasseForType($d->type));
         static::updating(fn ($d) => $d->classe = self::getClasseForType($d->type));
-
-        // ═══════════════════════════════════════════════════════════
-        // CASCADE DELETE — résout l'erreur FK constraint
-        //
-        // On supprime les enfants AVANT la suppression de la dépense.
-        // Les dossiers sont supprimés un par un pour déclencher leur
-        // propre hook deleting (qui supprime les fichiers PDF et écrit
-        // dans ActivityLog).
-        // ═══════════════════════════════════════════════════════════
-        static::deleting(function ($depense) {
-            // 1. Supprimer les dossiers un par un (déclenche Dossier::deleting)
-            $depense->dossiers()->each(function ($dossier) {
-                $dossier->delete();
-            });
-
-            // 2. Supprimer les imputations en masse
-            $depense->imputations()->delete();
-        });
     }
 
     public static function getClasseForType(string $type): string
@@ -61,5 +41,5 @@ class Depense extends Model
     }
 
     public function imputations() { return $this->hasMany(Imputation::class); }
-    public function dossiers()    { return $this->hasMany(Dossier::class); }
+    public function dossiers() { return $this->hasMany(Dossier::class); }
 }

@@ -2,227 +2,374 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityLog;
-use App\Models\Depense;
 use App\Models\Dossier;
+use App\Models\Depense;
 use App\Models\Exercice;
-use App\Models\Imputation;
-use App\Models\Parametre;
-use App\Models\User;
-use App\Services\WorkContextService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Log;
 
 class ExportPdfController extends Controller
 {
     /**
-     * Route: /export/pdf/{type}
-     * Génère un PDF pour la liste demandée
+     * Exporte une liste en PDF.
+     *
+     * @param Request $request
+     * @param string  $type    Type de liste à exporter (dossiers, depenses, exercices, etc.)
      */
     public function export(Request $request, string $type)
     {
-        $data = match ($type) {
-            'dossiers' => $this->exportDossiers(),
-            'depenses' => $this->exportDepenses(),
-            'exercices' => $this->exportExercices(),
-            'imputations' => $this->exportImputations(),
-            'users' => $this->exportUsers(),
-            'parametres' => $this->exportParametres(),
-            'activity_logs' => $this->exportActivityLogs(),
-            default => abort(404, 'Type d\'export inconnu'),
+        return match ($type) {
+            'dossiers'    => $this->exportDossiers($request),
+            'depenses'    => $this->exportDepenses($request),
+            'exercices'   => $this->exportExercices($request),
+            'imputations' => $this->exportImputations($request),
+            default       => abort(404, "Type d'export inconnu : {$type}"),
         };
-
-        $html = $this->buildHtml($data['title'], $data['headers'], $data['rows'], $data['summary'] ?? null);
-
-        // Utiliser wkhtmltopdf si disponible, sinon HTML direct
-        $filename = "export_{$type}_" . date('Y-m-d_His') . '.pdf';
-        $tmpHtml = storage_path("app/private/export_{$type}.html");
-        $tmpPdf = storage_path("app/private/{$filename}");
-
-        file_put_contents($tmpHtml, $html);
-
-        // Essayer wkhtmltopdf
-        $wk = $this->findWkhtmltopdf();
-        if ($wk) {
-            exec("\"{$wk}\" --page-size A4 --orientation Landscape --margin-top 10 --margin-bottom 10 --margin-left 10 --margin-right 10 --encoding utf-8 \"{$tmpHtml}\" \"{$tmpPdf}\" 2>&1", $out, $code);
-            if ($code === 0 && file_exists($tmpPdf)) {
-                @unlink($tmpHtml);
-                return response()->download($tmpPdf, $filename)->deleteFileAfterSend();
-            }
-        }
-
-        // Fallback : retourner le HTML en téléchargement
-        @unlink($tmpHtml);
-        $htmlFilename = "export_{$type}_" . date('Y-m-d_His') . '.html';
-        return Response::make($html, 200, [
-            'Content-Type' => 'text/html; charset=utf-8',
-            'Content-Disposition' => "attachment; filename=\"{$htmlFilename}\"",
-        ]);
     }
 
-    // ═══════════ EXPORTS PAR TYPE ═══════════
-
-    private function exportDossiers(): array
+    // ══════════════════════════════════════════════════════════════
+    // EXPORT DOSSIERS
+    // ══════════════════════════════════════════════════════════════
+    private function exportDossiers(Request $request)
     {
-        $query = Dossier::with(['depense', 'exercice', 'imputation'])->orderByDesc('date_dossier');
+        $query = Dossier::with(['depense', 'exercice', 'imputation'])
+            ->orderBy('created_at', 'desc');
 
-        $exId = WorkContextService::getExerciceId();
-        if ($exId) $query->where('exercice_id', $exId);
-
-        $depId = WorkContextService::getDepenseId();
-        if ($depId) $query->where('depense_id', $depId);
+        // Filtres optionnels
+        if ($exerciceId = $request->get('exercice_id')) {
+            $query->where('exercice_id', $exerciceId);
+        }
+        if ($depenseId = $request->get('depense_id')) {
+            $query->where('depense_id', $depenseId);
+        }
 
         $dossiers = $query->get();
-        $total = $dossiers->sum('montant_engage');
 
-        return [
-            'title' => 'Liste des Dossiers Comptables — ' . WorkContextService::getSummary(),
-            'headers' => ['N° OP', 'Type', 'Exercice', 'Imputation', 'Bénéficiaire', 'Date', 'Montant (FCFA)', 'PDF'],
-            'rows' => $dossiers->map(fn ($d) => [
-                $d->ordre_paiement,
-                $d->depense?->type ?? '-',
-                $d->exercice?->annee ?? '-',
-                $d->imputation ? $d->imputation->compte . ' - ' . substr($d->imputation->libelle, 0, 20) : '-',
-                $d->beneficiaire,
-                $d->date_dossier?->format('d/m/Y') ?? '-',
-                number_format($d->montant_engage, 0, ',', ' '),
-                $d->fichier_path ? '✓' : '✗',
-            ])->toArray(),
-            'summary' => 'Total : ' . number_format($total, 0, ',', ' ') . ' FCFA — ' . $dossiers->count() . ' dossier(s)',
-        ];
-    }
+        // Informations pour le titre
+        $exercice = $exerciceId ? Exercice::find($exerciceId) : null;
+        $depense  = $depenseId  ? Depense::find($depenseId)   : null;
 
-    private function exportDepenses(): array
-    {
-        $depenses = Depense::withCount(['imputations', 'dossiers'])->orderBy('type')->get();
-        return [
-            'title' => 'Liste des Catégories de Dépenses',
-            'headers' => ['Libellé', 'Type', 'Classe', 'Imputations', 'Dossiers'],
-            'rows' => $depenses->map(fn ($d) => [$d->libelle, $d->type, $d->classe, $d->imputations_count, $d->dossiers_count])->toArray(),
-        ];
-    }
+        $titre = 'Liste des Dossiers Comptables';
+        $sousTitre = '';
 
-    private function exportExercices(): array
-    {
-        $exercices = Exercice::withCount('dossiers')->orderByDesc('annee')->get();
-        return [
-            'title' => 'Liste des Exercices Budgétaires',
-            'headers' => ['Année', 'Statut', 'Début', 'Fin', 'Dossiers'],
-            'rows' => $exercices->map(fn ($e) => [$e->annee, $e->statut, $e->date_debut?->format('d/m/Y'), $e->date_fin?->format('d/m/Y'), $e->dossiers_count])->toArray(),
-        ];
-    }
-
-    private function exportImputations(): array
-    {
-        $imputations = Imputation::with('depense')->withCount('dossiers')->orderBy('compte')->get();
-        return [
-            'title' => 'Liste des Imputations Budgétaires',
-            'headers' => ['Compte', 'Libellé', 'Dépense', 'Type', 'Dossiers'],
-            'rows' => $imputations->map(fn ($i) => [$i->compte, $i->libelle, $i->depense?->libelle ?? '-', $i->depense?->type ?? '-', $i->dossiers_count])->toArray(),
-        ];
-    }
-
-    private function exportUsers(): array
-    {
-        $users = User::with('roles')->get();
-        return [
-            'title' => 'Liste des Utilisateurs',
-            'headers' => ['Nom', 'Email', 'Rôle', 'Actif', 'Créé le'],
-            'rows' => $users->map(fn ($u) => [$u->name, $u->email, $u->roles->pluck('name')->join(', '), $u->active ? 'Oui' : 'Non', $u->created_at?->format('d/m/Y')])->toArray(),
-        ];
-    }
-
-    private function exportParametres(): array
-    {
-        $params = Parametre::all();
-        return [
-            'title' => 'Paramètres de l\'application',
-            'headers' => ['Clé', 'Valeur', 'Type', 'Description'],
-            'rows' => $params->map(fn ($p) => [$p->cle, substr($p->valeur, 0, 50), $p->type, substr($p->description ?? '', 0, 40)])->toArray(),
-        ];
-    }
-
-    private function exportActivityLogs(): array
-    {
-        $logs = ActivityLog::with('user')->latest()->limit(200)->get();
-        return [
-            'title' => 'Journal d\'activité (200 dernières entrées)',
-            'headers' => ['Date', 'Utilisateur', 'Action', 'Description', 'Résultat'],
-            'rows' => $logs->map(fn ($l) => [$l->created_at?->format('d/m/Y H:i'), $l->user?->name ?? '-', $l->action, substr($l->description, 0, 50), $l->resultat])->toArray(),
-        ];
-    }
-
-    // ═══════════ HTML BUILDER ═══════════
-
-    private function buildHtml(string $title, array $headers, array $rows, ?string $summary = null): string
-    {
-        $cabinet = Parametre::get('app.nom_cabinet', 'Cabinet Comptable');
-        $date = now()->format('d/m/Y à H:i');
-        $headerHtml = implode('', array_map(fn ($h) => "<th>{$h}</th>", $headers));
-        $rowsHtml = '';
-        foreach ($rows as $idx => $row) {
-            $bg = $idx % 2 === 0 ? '#ffffff' : '#f8fafc';
-            $cells = implode('', array_map(fn ($c) => "<td>{$c}</td>", $row));
-            $rowsHtml .= "<tr style=\"background:{$bg}\">{$cells}</tr>";
+        if ($exercice) {
+            $sousTitre .= "Exercice : {$exercice->annee}";
         }
-        $summaryHtml = $summary ? "<div class=\"summary\">{$summary}</div>" : '';
+        if ($depense) {
+            $sousTitre .= ($sousTitre ? ' — ' : '') . "Type : {$depense->libelle}";
+        }
 
-        return <<<HTML
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>{$title}</title>
-<style>
-@page{size:A4 landscape;margin:10mm}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#1e293b;padding:15px}
-.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #4f46e5;padding-bottom:10px;margin-bottom:15px}
-.header h1{font-size:14px;color:#312e81;font-weight:700}
-.header .meta{text-align:right;font-size:8px;color:#64748b}
-.cameroun-bar{height:3px;background:linear-gradient(90deg,#009639 33.33%,#CE1126 33.33%,#CE1126 66.66%,#FCD116 66.66%);margin-bottom:12px}
-table{width:100%;border-collapse:collapse;margin-bottom:12px}
-th{background:#4f46e5;color:white;padding:6px 8px;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;text-align:left;font-weight:600}
-td{padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:9px}
-tr:hover td{background:#eef2ff !important}
-.summary{margin-top:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-weight:700;font-size:10px;color:#166534}
-.footer{margin-top:15px;text-align:center;font-size:7px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
-</style>
-</head>
-<body>
-<div class="cameroun-bar"></div>
-<div class="header">
-    <div>
-        <h1>📋 {$title}</h1>
-        <div style="font-size:9px;color:#64748b;margin-top:3px">{$cabinet}</div>
-    </div>
-    <div class="meta">Exporté le {$date}<br>ArchiCompta Pro</div>
-</div>
-<table>
-<thead><tr>{$headerHtml}</tr></thead>
-<tbody>{$rowsHtml}</tbody>
-</table>
-{$summaryHtml}
-<div class="footer">{$cabinet} — Document généré par ArchiCompta Pro — {$date} — Page 1</div>
-</body>
-</html>
-HTML;
+        // Total des montants
+        $totalMontant = $dossiers->sum('montant_engage');
+
+        $html = $this->buildHtml(
+            titre: $titre,
+            sousTitre: $sousTitre,
+            content: $this->buildDossiersTable($dossiers, $totalMontant),
+            count: $dossiers->count()
+        );
+
+        return $this->renderPdf($html, "dossiers_" . date('Ymd_His'));
     }
 
-    private function findWkhtmltopdf(): ?string
+    /**
+     * Construit le tableau HTML des dossiers.
+     */
+    private function buildDossiersTable($dossiers, float $totalMontant): string
     {
-        $paths = [
-            'C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe',
-            'C:\\wkhtmltopdf\\bin\\wkhtmltopdf.exe',
-            '/usr/local/bin/wkhtmltopdf',
-            '/usr/bin/wkhtmltopdf',
-        ];
-        foreach ($paths as $p) {
-            if (file_exists($p)) return $p;
+        $rows = '';
+        $i = 0;
+
+        foreach ($dossiers as $d) {
+            $i++;
+            $bg       = $i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            $montant  = $d->montant_engage
+                ? number_format((float) $d->montant_engage, 0, ',', ' ') . ' FCFA'
+                : '—';
+            $type     = $d->depense?->type ?? '—';
+            $annee    = $d->exercice?->annee ?? '—';
+            $date     = $d->date_dossier
+                ? date('d/m/Y', strtotime($d->date_dossier))
+                : '—';
+            $pdf      = $d->fichier_path ? '✅' : '❌';
+            $imputation = $d->imputation?->compte ?? '—';
+
+            $rows .= "
+            <tr style='background-color: {$bg};'>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$i}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;'>{$d->ordre_paiement}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$type}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$annee}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$imputation}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$d->beneficiaire}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$date}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;'>{$montant}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$pdf}</td>
+            </tr>";
         }
-        // Check PATH
-        $which = PHP_OS_FAMILY === 'Windows' ? 'where wkhtmltopdf 2>NUL' : 'which wkhtmltopdf 2>/dev/null';
-        $result = trim(shell_exec($which) ?? '');
-        return $result ?: null;
+
+        $totalFormatted = number_format($totalMontant, 0, ',', ' ') . ' FCFA';
+
+        return "
+        <table style='width: 100%; border-collapse: collapse; font-size: 11px;'>
+            <thead>
+                <tr style='background-color: #1e40af; color: white;'>
+                    <th style='padding: 8px 6px; text-align: center; width: 30px;'>N°</th>
+                    <th style='padding: 8px 6px; text-align: left;'>Ordre Paiement</th>
+                    <th style='padding: 8px 6px; text-align: left;'>Type</th>
+                    <th style='padding: 8px 6px; text-align: center;'>Exercice</th>
+                    <th style='padding: 8px 6px; text-align: left;'>Imputation</th>
+                    <th style='padding: 8px 6px; text-align: left;'>Bénéficiaire</th>
+                    <th style='padding: 8px 6px; text-align: center;'>Date</th>
+                    <th style='padding: 8px 6px; text-align: right;'>Montant</th>
+                    <th style='padding: 8px 6px; text-align: center; width: 30px;'>PDF</th>
+                </tr>
+            </thead>
+            <tbody>
+                {$rows}
+            </tbody>
+            <tfoot>
+                <tr style='background-color: #1e40af; color: white; font-weight: bold;'>
+                    <td colspan='7' style='padding: 8px 6px; text-align: right;'>TOTAL :</td>
+                    <td style='padding: 8px 6px; text-align: right;'>{$totalFormatted}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>";
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // EXPORTS GÉNÉRIQUES (dépenses, exercices, imputations)
+    // ══════════════════════════════════════════════════════════════
+    private function exportDepenses(Request $request)
+    {
+        $items = Depense::orderBy('type')->orderBy('libelle')->get();
+
+        $rows = '';
+        $i = 0;
+        foreach ($items as $d) {
+            $i++;
+            $bg = $i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            $rows .= "
+            <tr style='background-color: {$bg};'>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$i}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;'>{$d->type}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$d->libelle}</td>
+            </tr>";
+        }
+
+        $table = "
+        <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+            <thead>
+                <tr style='background-color: #1e40af; color: white;'>
+                    <th style='padding: 8px; text-align: center; width: 40px;'>N°</th>
+                    <th style='padding: 8px; text-align: left;'>Type</th>
+                    <th style='padding: 8px; text-align: left;'>Libellé</th>
+                </tr>
+            </thead>
+            <tbody>{$rows}</tbody>
+        </table>";
+
+        $html = $this->buildHtml('Liste des Dépenses', '', $table, $items->count());
+        return $this->renderPdf($html, "depenses_" . date('Ymd_His'));
+    }
+
+    private function exportExercices(Request $request)
+    {
+        $items = Exercice::orderByDesc('annee')->get();
+
+        $rows = '';
+        $i = 0;
+        foreach ($items as $e) {
+            $i++;
+            $bg = $i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            $statut = ucfirst($e->statut ?? '—');
+            $rows .= "
+            <tr style='background-color: {$bg};'>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$i}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;'>{$e->annee}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$statut}</td>
+            </tr>";
+        }
+
+        $table = "
+        <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+            <thead>
+                <tr style='background-color: #1e40af; color: white;'>
+                    <th style='padding: 8px; text-align: center; width: 40px;'>N°</th>
+                    <th style='padding: 8px; text-align: left;'>Année</th>
+                    <th style='padding: 8px; text-align: left;'>Statut</th>
+                </tr>
+            </thead>
+            <tbody>{$rows}</tbody>
+        </table>";
+
+        $html = $this->buildHtml('Liste des Exercices', '', $table, $items->count());
+        return $this->renderPdf($html, "exercices_" . date('Ymd_His'));
+    }
+
+    private function exportImputations(Request $request)
+    {
+        $items = \App\Models\Imputation::with('depense')
+            ->orderBy('compte')
+            ->get();
+
+        $rows = '';
+        $i = 0;
+        foreach ($items as $imp) {
+            $i++;
+            $bg = $i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            $rows .= "
+            <tr style='background-color: {$bg};'>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;'>{$i}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;'>{$imp->compte}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>{$imp->libelle}</td>
+                <td style='padding: 6px 8px; border-bottom: 1px solid #e5e7eb;'>" . ($imp->depense?->libelle ?? '—') . "</td>
+            </tr>";
+        }
+
+        $table = "
+        <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+            <thead>
+                <tr style='background-color: #1e40af; color: white;'>
+                    <th style='padding: 8px; text-align: center; width: 40px;'>N°</th>
+                    <th style='padding: 8px; text-align: left;'>Compte</th>
+                    <th style='padding: 8px; text-align: left;'>Libellé</th>
+                    <th style='padding: 8px; text-align: left;'>Dépense</th>
+                </tr>
+            </thead>
+            <tbody>{$rows}</tbody>
+        </table>";
+
+        $html = $this->buildHtml('Liste des Imputations', '', $table, $items->count());
+        return $this->renderPdf($html, "imputations_" . date('Ymd_His'));
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // CONSTRUCTION DU HTML + RENDU PDF
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Construit le document HTML complet avec en-tête et pied de page.
+     */
+    private function buildHtml(string $titre, string $sousTitre, string $content, int $count): string
+    {
+        $date = date('d/m/Y à H:i');
+        $user = auth()->user()->name ?? 'Système';
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>{$titre}</title>
+            <style>
+                body {
+                    font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
+                    font-size: 12px;
+                    color: #1f2937;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 3px solid #1e40af;
+                    padding-bottom: 15px;
+                }
+                .header h1 {
+                    font-size: 20px;
+                    color: #1e40af;
+                    margin: 0 0 5px 0;
+                }
+                .header .subtitle {
+                    font-size: 13px;
+                    color: #6b7280;
+                }
+                .meta {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 15px;
+                    font-size: 10px;
+                    color: #9ca3af;
+                }
+                .meta-left { text-align: left; }
+                .meta-right { text-align: right; }
+                .footer {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    text-align: center;
+                    font-size: 9px;
+                    color: #9ca3af;
+                    border-top: 1px solid #e5e7eb;
+                    padding: 8px 20px;
+                }
+                @media print {
+                    body { margin: 0; padding: 15px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class='header'>
+                <h1>📋 {$titre}</h1>
+                " . ($sousTitre ? "<div class='subtitle'>{$sousTitre}</div>" : '') . "
+            </div>
+
+            <table style='width: 100%; margin-bottom: 15px;'>
+                <tr>
+                    <td style='font-size: 10px; color: #6b7280;'>
+                        📊 Total : <strong>{$count} enregistrement(s)</strong>
+                    </td>
+                    <td style='font-size: 10px; color: #6b7280; text-align: right;'>
+                        📅 Généré le {$date} par {$user}
+                    </td>
+                </tr>
+            </table>
+
+            {$content}
+
+            <div class='footer'>
+                Système d'Archivage Comptable — Export généré le {$date}
+            </div>
+        </body>
+        </html>";
+    }
+
+    /**
+     * Rendu PDF à partir du HTML.
+     * Utilise DomPDF si disponible, sinon retourne du HTML imprimable.
+     */
+    private function renderPdf(string $html, string $filename)
+    {
+        // Méthode 1 : DomPDF (paquet barryvdh/laravel-dompdf)
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled'      => false,
+                    'defaultFont'          => 'DejaVu Sans',
+                ]);
+
+            return $pdf->download("{$filename}.pdf");
+        }
+
+        // Méthode 2 : Snappy PDF (paquet barryvdh/laravel-snappy)
+        if (class_exists(\Barryvdh\Snappy\Facades\SnappyPdf::class)) {
+            $pdf = \Barryvdh\Snappy\Facades\SnappyPdf::loadHTML($html)
+                ->setOrientation('landscape')
+                ->setPaper('a4');
+
+            return $pdf->download("{$filename}.pdf");
+        }
+
+        // Méthode 3 : Fallback HTML imprimable
+        Log::warning('[ExportPdf] Aucune bibliothèque PDF disponible — fallback HTML');
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+        ]);
     }
 }

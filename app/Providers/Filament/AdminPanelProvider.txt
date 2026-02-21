@@ -37,7 +37,6 @@ class AdminPanelProvider extends PanelProvider
                 'gray'    => Color::Slate,
             ])
             ->font('Inter')
-            ->darkMode(true) // Supporte light, dark et système
             ->navigationGroups([
                 NavigationGroup::make('Tableau de bord')
                     ->icon('heroicon-o-squares-2x2')
@@ -81,7 +80,6 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarWidth('17rem')
             ->maxContentWidth('full')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
-            // ═══ STYLES PREMIUM + WIDGET CLOUD SIDEBAR ═══
             ->renderHook('panels::head.end', fn () => view('filament.premium-styles'))
             ->renderHook('panels::sidebar.nav.start', fn () => view('filament.context-badge'));
     }

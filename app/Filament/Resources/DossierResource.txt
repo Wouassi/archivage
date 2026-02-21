@@ -26,6 +26,9 @@ class DossierResource extends Resource
     protected static ?string $pluralModelLabel = 'Dossiers';
     protected static ?int $navigationSort      = 1;
 
+    // ══════════════════════════════════════════════════════════════
+    // FORMULAIRE
+    // ══════════════════════════════════════════════════════════════
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -41,7 +44,7 @@ class DossierResource extends Resource
                         ->relationship('depense', 'libelle')
                         ->required()
                         ->preload()
-                        ->live(onBlur: true)
+                        ->live(onBlur: true) // onBlur au lieu de live() pour éviter les requêtes à chaque frappe
                         ->default(fn () => class_exists(WorkContextService::class)
                             ? WorkContextService::getDepenseId()
                             : null)
@@ -53,17 +56,26 @@ class DossierResource extends Resource
                             $depenseId = $get('depense_id');
                             if (! $depenseId) return [];
 
-                            return Imputation::where('depense_id', $depenseId)
+                            // Requête optimisée : pluck direct sans charger les modèles
+                            // Tente d'abord avec formatted_compte, sinon avec compte
+                            $imputations = Imputation::where('depense_id', $depenseId)
                                 ->select(['id', 'compte', 'libelle'])
-                                ->get()
-                                ->mapWithKeys(fn ($imp) => [
-                                    $imp->id => "{$imp->compte} — {$imp->libelle}",
-                                ])
-                                ->toArray();
+                                ->get();
+
+                            $result = [];
+                            foreach ($imputations as $imp) {
+                                $label = $imp->compte ?? $imp->libelle ?? "#{$imp->id}";
+                                // Si le modèle a l'accessor formatted_compte
+                                if (isset($imp->formatted_compte)) {
+                                    $label = $imp->formatted_compte;
+                                }
+                                $result[$imp->id] = $label;
+                            }
+
+                            return $result;
                         })
                         ->required(),
 
-                    // ═══ EXERCICE (live pour mettre à jour la contrainte de date) ═══
                     Forms\Components\Select::make('exercice_id')
                         ->label('📅 Exercice')
                         ->relationship('exercice', 'annee')
@@ -72,32 +84,11 @@ class DossierResource extends Resource
                                 $id = WorkContextService::getExerciceId();
                                 if ($id) return $id;
                             }
-                            return Exercice::actif()->first()?->id
+                            return Exercice::where('actif', true)->first()?->id
                                 ?? Exercice::orderByDesc('annee')->first()?->id;
                         })
                         ->preload()
-                        ->required()
-                        ->live(onBlur: true)
-                        // Quand l'exercice change → recaler la date dans la bonne année
-                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
-                            if (! $state) return;
-                            $exercice = Exercice::find($state);
-                            if (! $exercice) return;
-
-                            $annee = (int) $exercice->annee;
-                            $currentDate = $get('date_dossier');
-
-                            if ($currentDate) {
-                                $dateYear = (int) \Carbon\Carbon::parse($currentDate)->year;
-                                if ($dateYear !== $annee) {
-                                    // Garder le même jour/mois mais changer l'année
-                                    $newDate = \Carbon\Carbon::parse($currentDate)->year($annee);
-                                    $set('date_dossier', $newDate->format('Y-m-d'));
-                                }
-                            } else {
-                                $set('date_dossier', "{$annee}-01-01");
-                            }
-                        }),
+                        ->required(),
 
                     Forms\Components\TextInput::make('ordre_paiement')
                         ->label('📄 N° Ordre de Paiement')
@@ -106,43 +97,10 @@ class DossierResource extends Resource
                         ->required()
                         ->maxLength(50),
 
-                    // ═══ DATE DOSSIER — contrainte : année = année exercice ═══
                     Forms\Components\DatePicker::make('date_dossier')
                         ->label('📆 Date du Dossier')
                         ->default(now())
-                        ->required()
-                        ->minDate(function (Forms\Get $get) {
-                            $exercice = $get('exercice_id') ? Exercice::find($get('exercice_id')) : null;
-                            return $exercice ? "{$exercice->annee}-01-01" : null;
-                        })
-                        ->maxDate(function (Forms\Get $get) {
-                            $exercice = $get('exercice_id') ? Exercice::find($get('exercice_id')) : null;
-                            return $exercice ? "{$exercice->annee}-12-31" : null;
-                        })
-                        ->helperText(function (Forms\Get $get) {
-                            $exercice = $get('exercice_id') ? Exercice::find($get('exercice_id')) : null;
-                            return $exercice
-                                ? "📅 Année {$exercice->annee} uniquement (du 01/01 au 31/12)"
-                                : 'Sélectionnez d\'abord un exercice';
-                        })
-                        // Validation serveur en plus du min/max côté UI
-                        ->rules([
-                            function (Forms\Get $get) {
-                                return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                    if (! $value || ! $get('exercice_id')) return;
-
-                                    $exercice = Exercice::find($get('exercice_id'));
-                                    if (! $exercice) return;
-
-                                    $dateYear = (int) \Carbon\Carbon::parse($value)->year;
-                                    $annee    = (int) $exercice->annee;
-
-                                    if ($dateYear !== $annee) {
-                                        $fail("La date doit être dans l'année {$annee} (exercice sélectionné).");
-                                    }
-                                };
-                            },
-                        ]),
+                        ->required(),
 
                     Forms\Components\TextInput::make('beneficiaire')
                         ->label('👤 Bénéficiaire')
@@ -165,6 +123,8 @@ class DossierResource extends Resource
                 ->collapsible(),
 
             // ═══ SECTION SCANNER ═══
+            // View::make = purement visuel, AUCUNE interaction avec le cycle Filament
+            // Les fichiers sont stockés en SESSION PHP uniquement
             Forms\Components\Section::make('🖨️ Numérisation directe (Scanner)')
                 ->icon('heroicon-o-camera')
                 ->description('Scannez ou uploadez des fichiers. Tout sera fusionné en 1 PDF au clic sur « Créer ».')
@@ -173,7 +133,7 @@ class DossierResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
-            // ═══ UPLOAD FILAMENT ═══
+            // ═══ SECTION UPLOAD FILAMENT ═══
             Forms\Components\Section::make('📎 Ou charger des fichiers PDF')
                 ->icon('heroicon-o-paper-clip')
                 ->description('Ces fichiers seront fusionnés avec les scans en 1 seul PDF.')
@@ -189,52 +149,102 @@ class DossierResource extends Resource
                         ->disk('public')
                         ->columnSpanFull()
                         ->reorderable()
-                        ->helperText('PDF, JPG, PNG — max 400 Mo chacun.'),
+                        ->helperText('PDF, JPG, PNG — max 400 Mo chacun. Seront fusionnés avec les scans.'),
                 ]),
         ]);
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // TABLE
+    // ══════════════════════════════════════════════════════════════
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('ordre_paiement')
-                    ->label('N° OP')->searchable()->sortable()->copyable()
-                    ->weight('bold')->icon('heroicon-o-document-text')->iconColor('primary'),
+                    ->label('N° OP')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->weight('bold')
+                    ->icon('heroicon-o-document-text')
+                    ->iconColor('primary'),
+
                 Tables\Columns\BadgeColumn::make('depense.type')
                     ->label('Type')
-                    ->colors(['primary' => 'INVESTISSEMENT', 'success' => 'FONCTIONNEMENT']),
+                    ->colors([
+                        'primary' => 'INVESTISSEMENT',
+                        'success' => 'FONCTIONNEMENT',
+                    ]),
+
                 Tables\Columns\BadgeColumn::make('exercice.annee')
-                    ->label('Exercice')->color('info'),
+                    ->label('Exercice')
+                    ->color('info'),
+
                 Tables\Columns\TextColumn::make('imputation.formatted_compte')
                     ->label('Imputation')
                     ->searchable(query: fn (Builder $q, string $s) =>
                         $q->whereHas('imputation', fn ($q2) =>
-                            $q2->where('compte', 'like', "%{$s}%")->orWhere('libelle', 'like', "%{$s}%")))
-                    ->icon('heroicon-o-calculator')->iconColor('warning')->limit(30)->toggleable(),
+                            $q2->where('compte', 'like', "%{$s}%")
+                               ->orWhere('libelle', 'like', "%{$s}%")
+                        )
+                    )
+                    ->icon('heroicon-o-calculator')
+                    ->iconColor('warning')
+                    ->limit(30)
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('beneficiaire')
-                    ->label('Bénéficiaire')->searchable()->limit(25)
-                    ->icon('heroicon-o-user')->iconColor('gray'),
+                    ->label('Bénéficiaire')
+                    ->searchable()
+                    ->limit(25)
+                    ->icon('heroicon-o-user')
+                    ->iconColor('gray'),
+
                 Tables\Columns\TextColumn::make('date_dossier')
-                    ->label('Date')->date('d/m/Y')->sortable()
-                    ->icon('heroicon-o-calendar')->iconColor('info'),
+                    ->label('Date')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar')
+                    ->iconColor('info'),
+
                 Tables\Columns\TextColumn::make('montant_engage')
-                    ->label('Montant')->numeric(thousandsSeparator: ' ')->suffix(' FCFA')
-                    ->sortable()->alignEnd()->weight('bold')->color('primary'),
+                    ->label('Montant')
+                    ->numeric(thousandsSeparator: ' ')
+                    ->suffix(' FCFA')
+                    ->sortable()
+                    ->alignEnd()
+                    ->weight('bold')
+                    ->color('primary'),
+
                 Tables\Columns\IconColumn::make('fichier_path')
-                    ->label('PDF')->boolean()
-                    ->trueIcon('heroicon-o-document-check')->falseIcon('heroicon-o-document-minus')
-                    ->trueColor('success')->falseColor('danger'),
+                    ->label('PDF')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-document-check')
+                    ->falseIcon('heroicon-o-document-minus')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
+
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Créé le')->dateTime('d/m/Y H:i')->sortable()
+                    ->label('Créé le')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                Tables\Filters\SelectFilter::make('depense_id')->label('Dépense')->relationship('depense', 'libelle'),
-                Tables\Filters\SelectFilter::make('exercice_id')->label('Exercice')->relationship('exercice', 'annee'),
-                Tables\Filters\TernaryFilter::make('fichier_path')->label('PDF')
-                    ->trueLabel('Avec PDF')->falseLabel('Sans PDF')
+                Tables\Filters\SelectFilter::make('depense_id')
+                    ->label('Dépense')
+                    ->relationship('depense', 'libelle'),
+
+                Tables\Filters\SelectFilter::make('exercice_id')
+                    ->label('Exercice')
+                    ->relationship('exercice', 'annee'),
+
+                Tables\Filters\TernaryFilter::make('fichier_path')
+                    ->label('PDF')
+                    ->trueLabel('Avec PDF')
+                    ->falseLabel('Sans PDF')
                     ->queries(
                         true:  fn (Builder $q) => $q->whereNotNull('fichier_path'),
                         false: fn (Builder $q) => $q->whereNull('fichier_path'),
@@ -253,11 +263,15 @@ class DossierResource extends Resource
             });
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // INFOLIST
+    // ══════════════════════════════════════════════════════════════
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
             Infolists\Components\Section::make('📋 Informations')
-                ->icon('heroicon-o-document-text')->columns(3)
+                ->icon('heroicon-o-document-text')
+                ->columns(3)
                 ->schema([
                     Infolists\Components\TextEntry::make('ordre_paiement')->label('N° OP')->weight('bold')->copyable(),
                     Infolists\Components\TextEntry::make('depense.type')->label('Type')->badge(),
@@ -269,12 +283,15 @@ class DossierResource extends Resource
                     Infolists\Components\TextEntry::make('montant_formate')->label('Montant')->weight('bold')->color('primary')->size('lg'),
                     Infolists\Components\TextEntry::make('observations')->label('Observations')->columnSpanFull(),
                 ]),
+
             Infolists\Components\Section::make('📎 Document PDF')
                 ->icon('heroicon-o-paper-clip')
                 ->schema([
-                    Infolists\Components\ViewEntry::make('pdf_viewer')->label('')
+                    Infolists\Components\ViewEntry::make('pdf_viewer')
+                        ->label('')
                         ->view('filament.resources.dossier-resource.pages.pdf-viewer')
-                        ->columnSpanFull()->visible(fn ($record) => $record->pdf_exists),
+                        ->columnSpanFull()
+                        ->visible(fn ($record) => $record->pdf_exists),
                 ]),
         ]);
     }
@@ -295,5 +312,8 @@ class DossierResource extends Resource
         return $c > 0 ? (string) $c : null;
     }
 
-    public static function getNavigationBadgeColor(): string|array|null { return 'danger'; }
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'danger';
+    }
 }

@@ -1,39 +1,37 @@
 <div>
-@php
-    $ctx = \App\Services\WorkContextService::class;
-    $exercice = $ctx::getExercice();
-    $depense = $ctx::getDepense();
-@endphp
+    {{-- ══════════════════════════════════════════════════════════
+         Widget Cloud — affiché en haut de la sidebar
+         ══════════════════════════════════════════════════════════ --}}
+    <div class="ach-cloud-widget">
+        <div class="ach-cloud-widget-title">☁️ Cloud & Paramètres</div>
 
-@if($exercice)
-    <div class="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-r from-indigo-500/10 to-emerald-500/10 border border-indigo-200/50 dark:border-indigo-700/50">
-        <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-500 text-white text-xs font-bold">{{ substr($exercice->annee, -2) }}</span>
-            <span class="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Exercice {{ $exercice->annee }}</span>
-            @if($exercice->statut === 'actif')
-                <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700">Actif</span>
-            @else
-                <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-600">Clos</span>
-            @endif
-        </div>
-        @if($depense)
-        <div class="flex items-center gap-2 mt-1.5">
-            @if($depense->type === 'INVESTISSEMENT')
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-sky-500 text-white text-[10px]">INV</span>
-                <span class="text-[11px] text-sky-700 dark:text-sky-300 truncate">{{ $depense->libelle }}</span>
-            @else
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-amber-500 text-white text-[10px]">FON</span>
-                <span class="text-[11px] text-amber-700 dark:text-amber-300 truncate">{{ $depense->libelle }}</span>
-            @endif
-        </div>
-        @endif
+        {{-- Sync Cloud --}}
+        <a href="{{ url('/admin') }}" title="Synchronisation Cloud">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+            </svg>
+            Sync Cloud
+        </a>
+
+        {{-- Paramètres --}}
+        <a href="{{ url('/admin') }}" title="Paramètres généraux">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Paramètres
+        </a>
+
+        {{-- Export / Sauvegarde --}}
+        <a href="{{ url('/admin') }}" title="Exporter les données">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export & Backup
+        </a>
     </div>
-@else
-    <div class="mx-3 mb-3 p-3 rounded-xl bg-amber-50/80 border border-amber-200/60 dark:bg-amber-900/20 dark:border-amber-700/50">
-        <div class="flex items-center gap-2">
-            <span class="text-amber-500 text-lg">⚠️</span>
-            <span class="text-xs text-amber-700 dark:text-amber-300">Contexte non défini</span>
-        </div>
-    </div>
-@endif
 </div>

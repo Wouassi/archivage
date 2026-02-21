@@ -1,35 +1,66 @@
 <?php
 
 return [
+
     /*
     |--------------------------------------------------------------------------
-    | Larascan — Intégration Scanner.js (Asprise)
+    | Driver de numérisation
     |--------------------------------------------------------------------------
-    | Basé sur https://github.com/hermezdelay/larascan
-    | Scanner.js détecte automatiquement les scanners TWAIN/WIA/SANE
-    | connectés au poste client et permet le scan direct depuis le navigateur.
+    | 'auto' = WIA sur Windows, SANE sur Linux/Mac
+    | 'wia'  = Forcer WIA (Windows)
+    | 'sane' = Forcer SANE (Linux/Mac)
     */
+    'driver' => env('SCANNER_DRIVER', 'auto'),
 
-    'enabled' => env('LARASCAN_ENABLED', true),
+    /*
+    |--------------------------------------------------------------------------
+    | Sortie des fichiers
+    |--------------------------------------------------------------------------
+    */
+    'output' => [
+        'disk'        => env('SCANNER_DISK', 'public'),
+        'path'        => env('SCANNER_PATH', 'scanner/temp'),
+        'compression' => env('SCANNER_COMPRESSION', true),
+    ],
 
-    // URL du CDN Scanner.js (ou chemin local si hébergé)
-    'scanner_js_url' => env('LARASCAN_JS_URL', 'https://cdn.asprise.com/scannerjs/scanner.js'),
+    /*
+    |--------------------------------------------------------------------------
+    | Configuration WIA (Windows)
+    |--------------------------------------------------------------------------
+    */
+    'wia' => [
+        'default_resolution' => 150,
+        'default_mode'       => 'Gray',
+    ],
 
-    // Route de réception des scans
-    'upload_url' => '/scan/upload',
+    /*
+    |--------------------------------------------------------------------------
+    | Configuration SANE (Linux/Mac)
+    |--------------------------------------------------------------------------
+    */
+    'sane' => [
+        'scanimage_path'     => env('SCANIMAGE_PATH', '/usr/bin/scanimage'),
+        'default_resolution' => 150,
+        'default_mode'       => 'Gray',
+    ],
 
-    // Paramètres de scan par défaut
-    'default_dpi' => env('LARASCAN_DPI', 200),
-    'default_color' => env('LARASCAN_COLOR', 'RGB'),      // RGB, GRAY, BW
-    'default_format' => env('LARASCAN_FORMAT', 'pdf'),     // jpg, pdf, png
-    'default_paper' => env('LARASCAN_PAPER', 'TWSS_A4'),   // TWSS_A4, TWSS_USLETTER
+    /*
+    |--------------------------------------------------------------------------
+    | PDF
+    |--------------------------------------------------------------------------
+    */
+    'pdf' => [
+        'quality' => 50,
+    ],
 
-    // Utiliser le dialogue Asprise (prévisualisation, réorganisation)
-    'use_asprise_dialog' => env('LARASCAN_DIALOG', true),
+    /*
+    |--------------------------------------------------------------------------
+    | Limites
+    |--------------------------------------------------------------------------
+    */
+    'limits' => [
+        'max_documents'    => 500,
+        'max_file_size_mb' => 400,   // 400 Mo par fichier
+    ],
 
-    // Montrer l'UI natif du scanner
-    'show_scanner_ui' => env('LARASCAN_NATIVE_UI', false),
-
-    // Compression PDF
-    'pdf_compression' => env('LARASCAN_PDF_COMPRESSION', true),
 ];
