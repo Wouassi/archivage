@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExportPdfController;
+use App\Http\Controllers\BackupController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Models\Dossier;
@@ -10,6 +11,13 @@ use Illuminate\Support\Facades\Storage;
 // REDIRECTION VERS FILAMENT
 // ══════════════════════════════════════════════════════════════
 Route::get('/', fn () => redirect('/admin'));
+
+// ══════════════════════════════════════════════════════════════
+// BACKUP — Export BDD + DOSSIER_ARCHIVE en ZIP
+// ══════════════════════════════════════════════════════════════
+Route::get('/admin/backup/download', [BackupController::class, 'download'])
+    ->middleware(['web', 'auth'])
+    ->name('backup.download');
 
 // ══════════════════════════════════════════════════════════════
 // ROUTE POUR SERVIR LES FICHIERS DU STORAGE

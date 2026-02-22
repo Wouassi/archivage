@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
@@ -42,32 +41,6 @@ class LarascanScanner extends Component
     {
         Log::info("🔵 LarascanScanner monté");
         $this->detectScanners();
-    }
-
-    /**
-     * Appelé après "Créer et ajouter une autre" pour vider le scanner.
-     * Écoute l'événement dispatché par CreateDossier::afterCreate()
-     */
-    #[On('scanner-reset')]
-    public function resetScanner(): void
-    {
-        // Supprimer les fichiers temporaires
-        foreach ($this->getAllDocuments() as $doc) {
-            if (isset($doc['path']) && Storage::disk('public')->exists($doc['path'])) {
-                Storage::disk('public')->delete($doc['path']);
-            }
-        }
-
-        $this->scannedDocuments = [];
-        $this->uploadedDocuments = [];
-        $this->uploadFiles = [];
-        $this->message = '';
-        $this->batchProgress = 0;
-        $this->isScanning = false;
-        $this->isBatchScanning = false;
-
-        session()->forget('larascan_pdf_paths');
-        Log::info("🔄 LarascanScanner réinitialisé (scanner-reset)");
     }
 
     // ══════════════════════════════════════════════════════════════

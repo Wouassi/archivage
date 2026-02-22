@@ -27,138 +27,78 @@ class ImputationResource extends Resource
                 ->description('Le code comptable doit contenir exactement 6 chiffres (OHADA/SYSCOHADA)')
                 ->columns(2)
                 ->schema([
-
                     Forms\Components\Select::make('depense_id')
                         ->label('🏷️ Dépense parente')
                         ->relationship('depense', 'libelle')
-                        ->preload()
-                        ->required()
-                        ->live()
-                        // Quand la dépense change, pré-remplir le 1er chiffre du code
+                        ->preload()->required()->live()
                         ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?string $state) {
-                            if (! $state) return;
-
+                            if (!$state) return;
                             $depense = Depense::find($state);
-                            if (! $depense) return;
-
-                            $classe = $depense->classe; // '2' ou '6'
-                            $currentCompte = $get('compte') ?? '';
-
-                            // Si le champ est vide → pré-remplir avec la classe + 5 zéros
-                            if (empty($currentCompte)) {
-                                $set('compte', $classe . '00000');
-                                return;
-                            }
-
-                            // Si le 1er chiffre ne correspond pas → le corriger
-                            if (strlen($currentCompte) >= 1 && substr($currentCompte, 0, 1) !== $classe) {
-                                $set('compte', $classe . substr($currentCompte, 1));
+                            if (!$depense) return;
+                            $classe = $depense->classe;
+                            $current = $get('compte') ?? '';
+                            if (empty($current)) { $set('compte', $classe . '00000'); return; }
+                            if (strlen($current) >= 1 && substr($current, 0, 1) !== $classe) {
+                                $set('compte', $classe . substr($current, 1));
                             }
                         })
                         ->helperText(function (Forms\Get $get) {
-                            $depenseId = $get('depense_id');
-                            if (! $depenseId) return 'Sélectionnez une dépense pour déterminer la classe';
-
-                            $depense = Depense::find($depenseId);
-                            if (! $depense) return null;
-
-                            return match ($depense->type) {
-                                'INVESTISSEMENT' => '📦 Investissement → le code doit commencer par 2',
-                                'FONCTIONNEMENT' => '⚙️ Fonctionnement → le code doit commencer par 6',
-                                default => null,
-                            };
+                            $d = $get('depense_id') ? Depense::find($get('depense_id')) : null;
+                            if (!$d) return 'Sélectionnez une dépense';
+                            return $d->type === 'INVESTISSEMENT'
+                                ? '📦 Investissement → code commence par 2'
+                                : '⚙️ Fonctionnement → code commence par 6';
                         }),
-
                     Forms\Components\TextInput::make('compte')
                         ->label('🔢 Code comptable (6 chiffres)')
-                        ->required()
-                        ->minLength(6)
-                        ->maxLength(6)
-                        ->regex('/^\d{6}$/')
+                        ->required()->minLength(6)->maxLength(6)->regex('/^\d{6}$/')
                         ->placeholder(function (Forms\Get $get) {
-                            $depenseId = $get('depense_id');
-                            if (! $depenseId) return 'Choisissez d\'abord la dépense';
-
-                            $depense = Depense::find($depenseId);
-                            if (! $depense) return '000000';
-
-                            return match ($depense->type) {
-                                'INVESTISSEMENT' => '2XXXXX (ex: 241000)',
-                                'FONCTIONNEMENT' => '6XXXXX (ex: 601100)',
-                                default => '000000',
-                            };
+                            $d = $get('depense_id') ? Depense::find($get('depense_id')) : null;
+                            return $d ? ($d->type === 'INVESTISSEMENT' ? '2XXXXX' : '6XXXXX') : 'Choisir dépense';
                         })
                         ->helperText(function (Forms\Get $get) {
-                            $depenseId = $get('depense_id');
-                            if (! $depenseId) return 'Exactement 6 chiffres';
-
-                            $depense = Depense::find($depenseId);
-                            if (! $depense) return 'Exactement 6 chiffres';
-
-                            return "Le 1er chiffre doit être {$depense->classe} ({$depense->type})";
+                            $d = $get('depense_id') ? Depense::find($get('depense_id')) : null;
+                            return $d ? "1er chiffre = {$d->classe} ({$d->type})" : '6 chiffres exactement';
                         })
-                        // Validation custom : vérifier que le 1er chiffre correspond à la classe
-                        ->rules([
-                            function (Forms\Get $get) {
-                                return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                    if (! $value) return;
-
-                                    // Vérifier format 6 chiffres
-                                    if (! preg_match('/^\d{6}$/', $value)) {
-                                        $fail('Le code comptable doit contenir exactement 6 chiffres.');
-                                        return;
-                                    }
-
-                                    // Vérifier cohérence avec la dépense
-                                    $depenseId = $get('depense_id');
-                                    if (! $depenseId) return;
-
-                                    $depense = Depense::find($depenseId);
-                                    if (! $depense) return;
-
-                                    $premierChiffre = substr($value, 0, 1);
-                                    if ($premierChiffre !== $depense->classe) {
-                                        $fail(
-                                            "Le code doit commencer par {$depense->classe} pour une dépense de type {$depense->type}. "
-                                            . "Vous avez saisi {$premierChiffre}."
-                                        );
-                                    }
-                                };
-                            },
-                        ]),
-
+                        ->rules([function (Forms\Get $get) {
+                            return function (string $attr, $val, \Closure $fail) use ($get) {
+                                if (!$val || !$get('depense_id')) return;
+                                $d = Depense::find($get('depense_id'));
+                                if ($d && substr($val, 0, 1) !== $d->classe) {
+                                    $fail("Le code doit commencer par {$d->classe} pour {$d->type}.");
+                                }
+                            };
+                        }]),
                     Forms\Components\TextInput::make('libelle')
-                        ->label('📝 Libellé')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpanFull()
-                        ->placeholder('Ex: Matériel de bureau, Fournitures, Équipement informatique...'),
+                        ->label('📝 Libellé')->required()->maxLength(255)->columnSpanFull(),
                 ]),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('compte')
-                    ->label('Code')->sortable()->weight('bold')->copyable()
-                    ->icon('heroicon-o-hashtag')->iconColor('primary')->searchable(),
-                Tables\Columns\TextColumn::make('libelle')
-                    ->label('Libellé')->searchable()->limit(40),
-                Tables\Columns\TextColumn::make('depense.libelle')
-                    ->label('Dépense')->icon('heroicon-o-tag')->iconColor('info'),
-                Tables\Columns\BadgeColumn::make('depense.type')
-                    ->label('Type')
-                    ->colors(['primary' => 'INVESTISSEMENT', 'success' => 'FONCTIONNEMENT']),
-                Tables\Columns\TextColumn::make('dossiers_count')
-                    ->label('Dossiers')->counts('dossiers')
-                    ->icon('heroicon-o-folder')->iconColor('warning'),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()->iconButton(),
-                Tables\Actions\DeleteAction::make()->iconButton(),
-            ]);
+        return $table->columns([
+            Tables\Columns\TextColumn::make('compte')->label('Code')->sortable()->weight('bold')
+                ->copyable()->icon('heroicon-o-hashtag')->iconColor('primary')->searchable(),
+            Tables\Columns\TextColumn::make('libelle')->label('Libellé')->searchable()->limit(40),
+            Tables\Columns\TextColumn::make('depense.libelle')->label('Dépense')->icon('heroicon-o-tag')->iconColor('info'),
+            Tables\Columns\BadgeColumn::make('depense.type')->label('Type')
+                ->colors(['primary' => 'INVESTISSEMENT', 'success' => 'FONCTIONNEMENT']),
+            Tables\Columns\TextColumn::make('dossiers_count')->label('Dossiers')->counts('dossiers')
+                ->icon('heroicon-o-folder')->iconColor('warning'),
+        ])
+        ->actions([Tables\Actions\EditAction::make()->iconButton(), Tables\Actions\DeleteAction::make()->iconButton()]);
+    }
+
+    // ═══ BADGE : nombre total d'imputations ═══
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) Imputation::count();
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'info';
     }
 
     public static function getPages(): array

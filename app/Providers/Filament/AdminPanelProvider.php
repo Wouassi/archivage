@@ -37,17 +37,18 @@ class AdminPanelProvider extends PanelProvider
                 'gray'    => Color::Slate,
             ])
             ->font('Inter')
-            ->darkMode(true) // Supporte light, dark et système
+            ->darkMode(true)
+            // ═══ ORDRE DES SECTIONS : Tableau de bord → Documents → Comptabilité → Administration ═══
             ->navigationGroups([
                 NavigationGroup::make('Tableau de bord')
-                    ->icon('heroicon-o-squares-2x2')
+                    ->icon('heroicon-o-chart-bar-square')
                     ->collapsible(false),
-                NavigationGroup::make('Comptabilité')
-                    ->icon('heroicon-o-calculator'),
                 NavigationGroup::make('Documents')
                     ->icon('heroicon-o-folder-open'),
+                NavigationGroup::make('Comptabilité')
+                    ->icon('heroicon-o-banknotes'),
                 NavigationGroup::make('Administration')
-                    ->icon('heroicon-o-cog-6-tooth')
+                    ->icon('heroicon-o-shield-check')
                     ->collapsed(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -81,7 +82,6 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarWidth('17rem')
             ->maxContentWidth('full')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
-            // ═══ STYLES PREMIUM + WIDGET CLOUD SIDEBAR ═══
             ->renderHook('panels::head.end', fn () => view('filament.premium-styles'))
             ->renderHook('panels::sidebar.nav.start', fn () => view('filament.context-badge'));
     }

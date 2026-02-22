@@ -26,81 +26,59 @@ class DepenseResource extends Resource
                 ->description('Investissement = Classe 2 | Fonctionnement = Classe 6')
                 ->columns(2)
                 ->schema([
-                    Forms\Components\TextInput::make('libelle')
-                        ->label('📝 Libellé')
-                        ->required()
-                        ->maxLength(255),
-
-                    Forms\Components\Select::make('type')
-                        ->label('🏷️ Type')
-                        ->options(Depense::getTypes())
-                        ->required()
-                        ->live()
+                    Forms\Components\TextInput::make('libelle')->label('📝 Libellé')->required()->maxLength(255),
+                    Forms\Components\Select::make('type')->label('🏷️ Type')->options(Depense::getTypes())->required()->live()
                         ->afterStateUpdated(fn (Forms\Set $set, ?string $state) =>
-                            $state ? $set('classe', Depense::getClasseForType($state)) : null
-                        ),
-
-                    Forms\Components\TextInput::make('classe')
-                        ->label('📊 Classe OHADA')
-                        ->disabled()
-                        ->dehydrated()
+                            $state ? $set('classe', Depense::getClasseForType($state)) : null),
+                    Forms\Components\TextInput::make('classe')->label('📊 Classe OHADA')->disabled()->dehydrated()
                         ->helperText('Calculée automatiquement selon le type'),
-
-                    Forms\Components\Textarea::make('description')
-                        ->label('📋 Description')
-                        ->rows(3)
-                        ->columnSpanFull(),
+                    Forms\Components\Textarea::make('description')->label('📋 Description')->rows(3)->columnSpanFull(),
                 ]),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('libelle')
-                    ->label('Libellé')->searchable()->sortable()->weight('bold')
-                    ->icon('heroicon-o-tag')->iconColor('primary'),
-                Tables\Columns\BadgeColumn::make('type')
-                    ->colors(['primary' => 'INVESTISSEMENT', 'success' => 'FONCTIONNEMENT']),
-                Tables\Columns\TextColumn::make('classe')
-                    ->label('Classe')->badge()->color('info'),
-                Tables\Columns\TextColumn::make('imputations_count')
-                    ->label('Imputations')->counts('imputations')
-                    ->icon('heroicon-o-calculator')->iconColor('warning'),
-                Tables\Columns\TextColumn::make('dossiers_count')
-                    ->label('Dossiers')->counts('dossiers')
-                    ->icon('heroicon-o-folder')->iconColor('success'),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('type')->options(Depense::getTypes()),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()->iconButton(),
+        return $table->columns([
+            Tables\Columns\TextColumn::make('libelle')->label('Libellé')->searchable()->sortable()->weight('bold')
+                ->icon('heroicon-o-tag')->iconColor('primary'),
+            Tables\Columns\BadgeColumn::make('type')->colors(['primary' => 'INVESTISSEMENT', 'success' => 'FONCTIONNEMENT']),
+            Tables\Columns\TextColumn::make('classe')->label('Classe')->badge()->color('info'),
+            Tables\Columns\TextColumn::make('imputations_count')->label('Imputations')->counts('imputations')
+                ->icon('heroicon-o-calculator')->iconColor('warning'),
+            Tables\Columns\TextColumn::make('dossiers_count')->label('Dossiers')->counts('dossiers')
+                ->icon('heroicon-o-folder')->iconColor('success'),
+        ])
+        ->filters([Tables\Filters\SelectFilter::make('type')->options(Depense::getTypes())])
+        ->actions([
+            Tables\Actions\EditAction::make()->iconButton(),
+            Tables\Actions\DeleteAction::make()->iconButton()
+                ->requiresConfirmation()
+                ->modalHeading('Supprimer la dépense')
+                ->modalDescription(function (Depense $record): string {
+                    $d = $record->dossiers()->count();
+                    $i = $record->imputations()->count();
+                    $msg = "Supprimer « {$record->libelle} » ({$record->type}) ?";
+                    if ($d > 0 || $i > 0) {
+                        $msg .= "\n\n⚠️ Seront aussi supprimés :";
+                        if ($d > 0) $msg .= "\n  • {$d} dossier(s) et leurs PDF";
+                        if ($i > 0) $msg .= "\n  • {$i} imputation(s)";
+                    }
+                    return $msg;
+                })
+                ->modalSubmitActionLabel('Oui, supprimer'),
+        ]);
+    }
 
-                // ═══ SUPPRESSION SÉCURISÉE ═══
-                // Affiche le nombre de dossiers/imputations qui seront supprimés
-                Tables\Actions\DeleteAction::make()
-                    ->iconButton()
-                    ->requiresConfirmation()
-                    ->modalHeading('Supprimer la dépense')
-                    ->modalDescription(function (Depense $record): string {
-                        $dossiers     = $record->dossiers()->count();
-                        $imputations  = $record->imputations()->count();
+    // ═══ BADGE : nombre total de dépenses ═══
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) Depense::count();
+    }
 
-                        $msg = "Supprimer « {$record->libelle} » ({$record->type}) ?";
-
-                        if ($dossiers > 0 || $imputations > 0) {
-                            $msg .= "\n\n⚠️ ATTENTION — Seront aussi supprimés :";
-                            if ($dossiers > 0)     $msg .= "\n  • {$dossiers} dossier(s) et leurs fichiers PDF";
-                            if ($imputations > 0)  $msg .= "\n  • {$imputations} imputation(s)";
-                            $msg .= "\n\nCette action est irréversible.";
-                        }
-
-                        return $msg;
-                    })
-                    ->modalSubmitActionLabel('Oui, tout supprimer'),
-            ]);
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'primary';
     }
 
     public static function getPages(): array

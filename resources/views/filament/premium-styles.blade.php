@@ -1,213 +1,135 @@
 <div>
 <style>
     /* ══════════════════════════════════════════════════════════════
-       ArchiCompta Pro — Premium Styles
-       Compatible : Light mode, Dark mode, System theme
+       ArchiCompta Pro — Premium Finance Theme v3
+       Sidebar finance pro + contraste amélioré + dark mode
        ══════════════════════════════════════════════════════════════ */
 
-    /* ══════════ FONDATIONS ══════════ */
     :root {
-        --ach-bg: #f0f4f8;
-        --ach-sidebar-from: #1e293b;
-        --ach-sidebar-to: #0f172a;
-        --ach-card-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+        --ach-bg: #eef2f7;
+        --ach-sidebar-from: #0f1d3a;
+        --ach-sidebar-to: #162044;
+        --ach-accent-gold: #d4a853;
+        --ach-accent-blue: #3b82f6;
+        --ach-card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
         --ach-card-hover: 0 10px 25px -5px rgba(0,0,0,0.1);
-        --ach-radius: 1rem;
-        --ach-transition: all 0.25s cubic-bezier(.4,0,.2,1);
+        --ach-radius: 0.875rem;
+        --ach-transition: all 0.2s cubic-bezier(.4,0,.2,1);
     }
 
-    .fi-body {
-        background: var(--ach-bg) !important;
-    }
-
-    .dark .fi-body {
-        background: #0c1222 !important;
-    }
+    .fi-body { background: var(--ach-bg) !important; }
+    .dark .fi-body { background: #080e1a !important; }
 
     /* ══════════════════════════════════════════════════════════════
-       TEXTES — CONTRASTE AMÉLIORÉ (light + dark)
-       ══════════════════════════════════════════════════════════════ */
-
-    /* Titres de page (h1) */
-    .fi-header-heading {
-        color: #0f172a !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.02em;
-    }
-    .dark .fi-header-heading {
-        color: #f1f5f9 !important;
-    }
-
-    /* Sous-titres / descriptions de page */
-    .fi-header-subheading,
-    .fi-header .text-sm {
-        color: #475569 !important;
-        font-weight: 500 !important;
-    }
-    .dark .fi-header-subheading,
-    .dark .fi-header .text-sm {
-        color: #cbd5e1 !important;
-    }
-
-    /* Titres de sections dans les formulaires */
-    .fi-section-header-heading {
-        color: #1e293b !important;
-        font-weight: 700 !important;
-        font-size: 1.05rem !important;
-    }
-    .dark .fi-section-header-heading {
-        color: #e2e8f0 !important;
-    }
-
-    /* Descriptions de sections */
-    .fi-section-header-description {
-        color: #64748b !important;
-    }
-    .dark .fi-section-header-description {
-        color: #94a3b8 !important;
-    }
-
-    /* Labels des champs de formulaire */
-    .fi-fo-field-wrp label,
-    .fi-fo-field-wrp .fi-fo-field-wrp-label {
-        color: #1e293b !important;
-        font-weight: 600 !important;
-    }
-    .dark .fi-fo-field-wrp label,
-    .dark .fi-fo-field-wrp .fi-fo-field-wrp-label {
-        color: #e2e8f0 !important;
-    }
-
-    /* Texte helper sous les champs */
-    .fi-fo-field-wrp .fi-fo-field-wrp-helper-text {
-        color: #64748b !important;
-    }
-    .dark .fi-fo-field-wrp .fi-fo-field-wrp-helper-text {
-        color: #94a3b8 !important;
-    }
-
-    /* Texte des inputs */
-    .fi-input input,
-    .fi-input textarea,
-    .fi-select select {
-        color: #0f172a !important;
-    }
-    .dark .fi-input input,
-    .dark .fi-input textarea,
-    .dark .fi-select select {
-        color: #f1f5f9 !important;
-    }
-
-    /* Liens */
-    a:not(.fi-btn):not(.fi-sidebar-item-button) {
-        color: #4f46e5;
-    }
-    a:not(.fi-btn):not(.fi-sidebar-item-button):hover {
-        color: #4338ca;
-    }
-    .dark a:not(.fi-btn):not(.fi-sidebar-item-button) {
-        color: #818cf8;
-    }
-    .dark a:not(.fi-btn):not(.fi-sidebar-item-button):hover {
-        color: #a5b4fc;
-    }
-
-    /* Breadcrumbs */
-    .fi-breadcrumbs li {
-        color: #64748b !important;
-    }
-    .fi-breadcrumbs a {
-        color: #4f46e5 !important;
-        font-weight: 500;
-    }
-    .dark .fi-breadcrumbs li {
-        color: #94a3b8 !important;
-    }
-    .dark .fi-breadcrumbs a {
-        color: #818cf8 !important;
-    }
-
-    /* ══════════════════════════════════════════════════════════════
-       SIDEBAR — GRADIENT SOMBRE PRO
+       SIDEBAR — FINANCE PREMIUM
+       Bleu marine profond + liserés dorés
        ══════════════════════════════════════════════════════════════ */
     .fi-sidebar {
         background: linear-gradient(180deg, var(--ach-sidebar-from) 0%, var(--ach-sidebar-to) 100%) !important;
+        border-right: 1px solid rgba(212, 168, 83, 0.15) !important;
     }
     .dark .fi-sidebar {
-        background: linear-gradient(180deg, #0f172a 0%, #020617 100%) !important;
+        background: linear-gradient(180deg, #060c1a 0%, #0a1128 100%) !important;
     }
 
+    /* Brand header */
     .fi-sidebar-header {
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        border-bottom: 1px solid rgba(212, 168, 83, 0.2) !important;
+        padding-bottom: 0.75rem !important;
     }
-
-    /* Brand name dans la sidebar */
     .fi-sidebar-header a,
     .fi-sidebar-header span {
         color: #ffffff !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em;
     }
 
-    /* Éléments de navigation sidebar */
+    /* ── Éléments de navigation ── */
     .fi-sidebar-nav .fi-sidebar-item {
-        border-radius: 0.625rem;
-        margin: 2px 8px;
+        border-radius: 0.5rem;
+        margin: 1px 6px;
         transition: var(--ach-transition);
     }
 
-    /* Texte des items sidebar — BIEN VISIBLE */
-    .fi-sidebar-item-button {
-        color: #cbd5e1 !important;
-    }
-    .fi-sidebar-item-button:hover {
-        color: #ffffff !important;
-    }
-    .fi-sidebar-item-label {
-        color: #cbd5e1 !important;
-        font-weight: 500 !important;
-        font-size: 0.875rem !important;
-    }
-
-    /* Icônes sidebar */
+    /* Icônes : BLANCHES */
     .fi-sidebar-item-icon {
-        color: #94a3b8 !important;
-    }
-    .fi-sidebar-item-button:hover .fi-sidebar-item-icon {
-        color: #e2e8f0 !important;
+        color: #ffffff !important;
+        opacity: 0.85;
+        transition: var(--ach-transition);
     }
 
-    /* Item actif */
+    /* Texte normal : blanc lumineux */
+    .fi-sidebar-item-button,
+    .fi-sidebar-item-label {
+        color: #e2e8f0 !important;
+        font-weight: 500 !important;
+        font-size: 0.84rem !important;
+        transition: var(--ach-transition);
+    }
+
+    /* ── HOVER : fond clair, texte NOIR ── */
+    .fi-sidebar-nav .fi-sidebar-item:hover {
+        background: rgba(255, 255, 255, 0.92) !important;
+    }
+    .fi-sidebar-nav .fi-sidebar-item:hover .fi-sidebar-item-button,
+    .fi-sidebar-nav .fi-sidebar-item:hover .fi-sidebar-item-label {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+    .fi-sidebar-nav .fi-sidebar-item:hover .fi-sidebar-item-icon {
+        color: var(--ach-accent-blue) !important;
+        opacity: 1;
+    }
+
+    /* ── ACTIF : bande dorée + fond semi-transparent ── */
+    .fi-sidebar-nav .fi-sidebar-item.fi-active {
+        background: rgba(212, 168, 83, 0.12) !important;
+        border-left: 3px solid var(--ach-accent-gold) !important;
+    }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-button,
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-label {
         color: #ffffff !important;
         font-weight: 700 !important;
     }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-icon {
-        color: #818cf8 !important;
-    }
-    .fi-sidebar-nav .fi-sidebar-item.fi-active {
-        background: rgba(99, 102, 241, 0.2) !important;
-        border-left: 3px solid #818cf8;
+        color: var(--ach-accent-gold) !important;
+        opacity: 1;
     }
 
-    /* Hover */
-    .fi-sidebar-nav .fi-sidebar-item:hover {
-        background: rgba(255, 255, 255, 0.06) !important;
-    }
-
-    /* Labels de groupe */
+    /* ── Labels de groupe (sections) — style finance ── */
     .fi-sidebar-group-label {
         text-transform: uppercase;
-        font-size: 0.65rem !important;
-        letter-spacing: 0.1em;
-        color: #64748b !important;
-        font-weight: 600 !important;
-        padding: 0.75rem 1rem 0.25rem !important;
+        font-size: 0.62rem !important;
+        letter-spacing: 0.14em;
+        color: var(--ach-accent-gold) !important;
+        font-weight: 700 !important;
+        padding: 0.9rem 0.75rem 0.3rem !important;
+        position: relative;
+    }
+    /* Ligne décorative sous les labels de groupe */
+    .fi-sidebar-group-label::after {
+        content: '';
+        display: block;
+        width: 28px;
+        height: 2px;
+        background: var(--ach-accent-gold);
+        opacity: 0.4;
+        margin-top: 4px;
+        border-radius: 1px;
     }
 
-    /* Badges de navigation (compteurs) */
+    /* Icônes de groupe */
+    .fi-sidebar-group-icon {
+        color: var(--ach-accent-gold) !important;
+        opacity: 0.7;
+    }
+
+    /* ── Badges dans la sidebar (compteurs) ── */
     .fi-sidebar-item-badge {
         font-weight: 700 !important;
+        font-size: 0.68rem !important;
+        min-width: 20px;
+        text-align: center;
     }
 
     /* ══════════════════════════════════════════════════════════════
@@ -233,89 +155,113 @@
        ══════════════════════════════════════════════════════════════ */
     .fi-topbar {
         backdrop-filter: blur(12px);
-        background: rgba(255,255,255,0.92) !important;
+        background: rgba(255,255,255,0.95) !important;
         border-bottom: 1px solid rgba(0,0,0,0.06) !important;
     }
     .dark .fi-topbar {
-        background: rgba(15, 23, 42, 0.92) !important;
-        border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+        background: rgba(15, 23, 42, 0.95) !important;
+        border-bottom-color: rgba(255,255,255,0.06) !important;
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       TEXTES — CONTRASTE
+       ══════════════════════════════════════════════════════════════ */
+    .fi-header-heading {
+        color: #0f172a !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em;
+    }
+    .dark .fi-header-heading { color: #f1f5f9 !important; }
+
+    .fi-header-subheading, .fi-header .text-sm {
+        color: #475569 !important;
+        font-weight: 500 !important;
+    }
+    .dark .fi-header-subheading, .dark .fi-header .text-sm {
+        color: #cbd5e1 !important;
+    }
+
+    .fi-section-header-heading {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+    }
+    .dark .fi-section-header-heading { color: #e2e8f0 !important; }
+
+    .fi-section-header-description { color: #64748b !important; }
+    .dark .fi-section-header-description { color: #94a3b8 !important; }
+
+    .fi-fo-field-wrp label,
+    .fi-fo-field-wrp .fi-fo-field-wrp-label {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    .dark .fi-fo-field-wrp label,
+    .dark .fi-fo-field-wrp .fi-fo-field-wrp-label { color: #e2e8f0 !important; }
+
+    .fi-fo-field-wrp .fi-fo-field-wrp-helper-text { color: #64748b !important; }
+    .dark .fi-fo-field-wrp .fi-fo-field-wrp-helper-text { color: #94a3b8 !important; }
+
+    /* Liens */
+    a:not(.fi-btn):not(.fi-sidebar-item-button):not(.fi-sidebar-header *) { color: #4f46e5; }
+    .dark a:not(.fi-btn):not(.fi-sidebar-item-button):not(.fi-sidebar-header *) { color: #818cf8; }
+
+    /* Breadcrumbs */
+    .fi-breadcrumbs a { color: #4f46e5 !important; font-weight: 500; }
+    .dark .fi-breadcrumbs a { color: #818cf8 !important; }
 
     /* ══════════════════════════════════════════════════════════════
        KPI / STATS WIDGETS
        ══════════════════════════════════════════════════════════════ */
     .fi-wi-stats-overview-stat,
-    .fi-wi-chart,
-    .fi-section,
-    .fi-ta {
+    .fi-wi-chart, .fi-section, .fi-ta {
         border-radius: var(--ach-radius) !important;
         box-shadow: var(--ach-card-shadow) !important;
-        border: 1px solid rgba(0,0,0,0.06) !important;
+        border: 1px solid rgba(0,0,0,0.05) !important;
         overflow: hidden;
         transition: var(--ach-transition);
     }
     .dark .fi-wi-stats-overview-stat,
-    .dark .fi-wi-chart,
-    .dark .fi-section,
-    .dark .fi-ta {
+    .dark .fi-wi-chart, .dark .fi-section, .dark .fi-ta {
         border-color: rgba(255,255,255,0.06) !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
     }
 
-    .fi-wi-stats-overview-stat:hover,
-    .fi-wi-chart:hover {
+    .fi-wi-stats-overview-stat:hover, .fi-wi-chart:hover {
         box-shadow: var(--ach-card-hover) !important;
         transform: translateY(-2px);
     }
 
-    /* Bordure colorée par position */
     .fi-wi-stats-overview-stat:nth-child(1) { border-top: 3px solid #6366f1 !important; }
     .fi-wi-stats-overview-stat:nth-child(2) { border-top: 3px solid #10b981 !important; }
     .fi-wi-stats-overview-stat:nth-child(3) { border-top: 3px solid #f43f5e !important; }
     .fi-wi-stats-overview-stat:nth-child(4) { border-top: 3px solid #8b5cf6 !important; }
     .fi-wi-stats-overview-stat:nth-child(5) { border-top: 3px solid #0ea5e9 !important; }
-    .fi-wi-stats-overview-stat:nth-child(6) { border-top: 3px solid #f59e0b !important; }
+    .fi-wi-stats-overview-stat:nth-child(6) { border-top: 3px solid var(--ach-accent-gold) !important; }
 
-    /* Valeur KPI — gros et lisible */
     .fi-wi-stats-overview-stat-value {
         font-size: 1.75rem !important;
         font-weight: 800 !important;
-        letter-spacing: -0.02em;
         color: #0f172a !important;
     }
-    .dark .fi-wi-stats-overview-stat-value {
-        color: #f8fafc !important;
-    }
+    .dark .fi-wi-stats-overview-stat-value { color: #f8fafc !important; }
 
-    /* Label KPI */
     .fi-wi-stats-overview-stat-label {
         color: #475569 !important;
         font-weight: 600 !important;
         font-size: 0.8rem !important;
     }
-    .dark .fi-wi-stats-overview-stat-label {
-        color: #94a3b8 !important;
-    }
+    .dark .fi-wi-stats-overview-stat-label { color: #94a3b8 !important; }
 
-    /* Description KPI (variation %, etc.) */
-    .fi-wi-stats-overview-stat-description {
-        font-weight: 600 !important;
-    }
+    .fi-wi-stats-overview-stat-description { font-weight: 600 !important; }
 
     /* ══════════════════════════════════════════════════════════════
        TABLE
        ══════════════════════════════════════════════════════════════ */
     .fi-ta-table { font-size: 0.8125rem !important; }
-
     .fi-ta-row { transition: background 0.15s ease; }
-    .fi-ta-row:hover {
-        background: rgba(99,102,241,0.04) !important;
-    }
-    .dark .fi-ta-row:hover {
-        background: rgba(99,102,241,0.08) !important;
-    }
+    .fi-ta-row:hover { background: rgba(99,102,241,0.04) !important; }
+    .dark .fi-ta-row:hover { background: rgba(99,102,241,0.08) !important; }
 
-    /* En-têtes de colonnes */
     .fi-ta-header-cell {
         text-transform: uppercase !important;
         font-size: 0.6875rem !important;
@@ -323,41 +269,20 @@
         color: #475569 !important;
         font-weight: 700 !important;
     }
-    .dark .fi-ta-header-cell {
-        color: #94a3b8 !important;
-    }
+    .dark .fi-ta-header-cell { color: #94a3b8 !important; }
 
-    /* Cellules de tableau — texte lisible */
-    .fi-ta-cell {
-        color: #1e293b !important;
-    }
-    .dark .fi-ta-cell {
-        color: #e2e8f0 !important;
-    }
+    .fi-ta-cell { color: #1e293b !important; }
+    .dark .fi-ta-cell { color: #e2e8f0 !important; }
 
-    /* Texte "Aucun résultat" */
-    .fi-ta-empty-state-heading {
-        color: #475569 !important;
-        font-weight: 600 !important;
-    }
-    .dark .fi-ta-empty-state-heading {
-        color: #94a3b8 !important;
-    }
+    .fi-ta-empty-state-heading { color: #475569 !important; font-weight: 600 !important; }
+    .dark .fi-ta-empty-state-heading { color: #94a3b8 !important; }
 
     /* ══════════════════════════════════════════════════════════════
-       BADGES
+       BADGES, FORMULAIRES, BOUTONS
        ══════════════════════════════════════════════════════════════ */
-    .fi-badge {
-        font-weight: 700 !important;
-        letter-spacing: 0.02em !important;
-        border-radius: 0.5rem !important;
-    }
+    .fi-badge { font-weight: 700 !important; border-radius: 0.5rem !important; }
 
-    /* ══════════════════════════════════════════════════════════════
-       FORMULAIRES
-       ══════════════════════════════════════════════════════════════ */
-    .fi-fo-field-wrp .fi-input,
-    .fi-fo-field-wrp .fi-select {
+    .fi-fo-field-wrp .fi-input, .fi-fo-field-wrp .fi-select {
         border-radius: 0.625rem !important;
         transition: var(--ach-transition);
     }
@@ -367,96 +292,50 @@
     }
     .dark .fi-fo-field-wrp .fi-input:focus-within {
         box-shadow: 0 0 0 3px rgba(129,140,248,0.2) !important;
-        border-color: #818cf8 !important;
     }
 
-    /* ══════════════════════════════════════════════════════════════
-       BOUTONS
-       ══════════════════════════════════════════════════════════════ */
     .fi-btn {
         border-radius: 0.625rem !important;
         font-weight: 600 !important;
-        letter-spacing: 0.01em;
         transition: var(--ach-transition) !important;
     }
-    .fi-btn:hover {
-        transform: translateY(-1px);
-    }
+    .fi-btn:hover { transform: translateY(-1px); }
 
     /* ══════════════════════════════════════════════════════════════
-       MODAL
+       MODAL, INFOLIST, NOTIFICATIONS
        ══════════════════════════════════════════════════════════════ */
-    .fi-modal-content {
-        border-radius: var(--ach-radius) !important;
-    }
-    .fi-modal-heading {
-        color: #0f172a !important;
-        font-weight: 700 !important;
-    }
-    .dark .fi-modal-heading {
-        color: #f1f5f9 !important;
-    }
-    .fi-modal-description {
-        color: #475569 !important;
-    }
-    .dark .fi-modal-description {
-        color: #cbd5e1 !important;
-    }
+    .fi-modal-content { border-radius: var(--ach-radius) !important; }
+    .fi-modal-heading { color: #0f172a !important; font-weight: 700 !important; }
+    .dark .fi-modal-heading { color: #f1f5f9 !important; }
 
-    /* ══════════════════════════════════════════════════════════════
-       INFOLIST (page View)
-       ══════════════════════════════════════════════════════════════ */
     .fi-in-entry-wrp-label {
-        color: #64748b !important;
-        font-weight: 600 !important;
-        font-size: 0.75rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        color: #64748b !important; font-weight: 600 !important;
+        font-size: 0.75rem !important; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .dark .fi-in-entry-wrp-label {
-        color: #94a3b8 !important;
-    }
+    .dark .fi-in-entry-wrp-label { color: #94a3b8 !important; }
+    .fi-in-text { color: #0f172a !important; font-weight: 500 !important; }
+    .dark .fi-in-text { color: #e2e8f0 !important; }
 
-    .fi-in-text {
-        color: #0f172a !important;
-        font-weight: 500 !important;
-    }
-    .dark .fi-in-text {
-        color: #e2e8f0 !important;
-    }
+    .fi-no { border-radius: 0.75rem !important; }
+    .fi-no-title { font-weight: 700 !important; }
 
     /* ══════════════════════════════════════════════════════════════
-       NOTIFICATIONS
-       ══════════════════════════════════════════════════════════════ */
-    .fi-no {
-        border-radius: 0.75rem !important;
-    }
-    .fi-no-title {
-        font-weight: 700 !important;
-    }
-
-    /* ══════════════════════════════════════════════════════════════
-       SCROLLBAR
+       SCROLLBAR, ANIMATIONS
        ══════════════════════════════════════════════════════════════ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
     .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
-    .dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-    /* ══════════════════════════════════════════════════════════════
-       ANIMATIONS
-       ══════════════════════════════════════════════════════════════ */
     @keyframes fadeSlideUp {
-        from { opacity: 0; transform: translateY(12px); }
+        from { opacity: 0; transform: translateY(10px); }
         to   { opacity: 1; transform: translateY(0); }
     }
-    .fi-page > * { animation: fadeSlideUp 0.35s ease-out; }
-    .fi-wi-stats-overview-stat { animation: fadeSlideUp 0.4s ease-out; }
+    .fi-page > * { animation: fadeSlideUp 0.3s ease-out; }
+    .fi-wi-stats-overview-stat { animation: fadeSlideUp 0.35s ease-out; }
 
     /* ══════════════════════════════════════════════════════════════
-       BORDURES DOSSIER (lignes colorées dans la table)
+       BORDURES DOSSIER + PDF VIEWER
        ══════════════════════════════════════════════════════════════ */
     .border-l-investissement { border-left: 4px solid #6366f1 !important; }
     .border-l-fonctionnement { border-left: 4px solid #10b981 !important; }
@@ -464,70 +343,12 @@
         border-left: 4px solid #f43f5e !important;
         background: rgba(244,63,94,0.03) !important;
     }
-    .dark .border-l-nopdf {
-        background: rgba(244,63,94,0.06) !important;
-    }
+    .dark .border-l-nopdf { background: rgba(244,63,94,0.06) !important; }
 
-    /* ══════════════════════════════════════════════════════════════
-       PDF VIEWER
-       ══════════════════════════════════════════════════════════════ */
     .pdf-embed-container {
-        border-radius: var(--ach-radius);
-        overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.08);
-        box-shadow: var(--ach-card-shadow);
+        border-radius: var(--ach-radius); overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.08); box-shadow: var(--ach-card-shadow);
     }
-    .pdf-embed-container iframe {
-        width: 100%;
-        height: 600px;
-        border: none;
-    }
-
-    /* ══════════════════════════════════════════════════════════════
-       CLOUD SETTINGS WIDGET (sidebar)
-       ══════════════════════════════════════════════════════════════ */
-    .ach-cloud-widget {
-        margin: 8px;
-        padding: 10px 12px;
-        border-radius: 0.625rem;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.08);
-        transition: var(--ach-transition);
-    }
-    .ach-cloud-widget:hover {
-        background: rgba(255,255,255,0.1);
-    }
-    .ach-cloud-widget-title {
-        color: #94a3b8;
-        font-size: 0.6rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-    .ach-cloud-widget a {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 8px;
-        border-radius: 6px;
-        color: #cbd5e1;
-        font-size: 0.8rem;
-        font-weight: 500;
-        text-decoration: none;
-        transition: var(--ach-transition);
-    }
-    .ach-cloud-widget a:hover {
-        background: rgba(99,102,241,0.15);
-        color: #e2e8f0;
-    }
-    .ach-cloud-widget a svg {
-        width: 16px;
-        height: 16px;
-        opacity: 0.7;
-    }
-    .ach-cloud-widget a:hover svg {
-        opacity: 1;
-    }
+    .pdf-embed-container iframe { width: 100%; height: 600px; border: none; }
 </style>
 </div>
