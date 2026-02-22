@@ -17,12 +17,13 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path('admin')
@@ -37,17 +38,17 @@ class AdminPanelProvider extends PanelProvider
                 'gray'    => Color::Slate,
             ])
             ->font('Inter')
-            ->darkMode(true) // Supporte light, dark et système
+            ->darkMode(true) // Active le toggle + détection thème système
             ->navigationGroups([
                 NavigationGroup::make('Tableau de bord')
-                    ->icon('heroicon-o-squares-2x2')
+                    ->icon('heroicon-o-chart-bar-square')
                     ->collapsible(false),
-                NavigationGroup::make('Comptabilité')
-                    ->icon('heroicon-o-calculator'),
                 NavigationGroup::make('Documents')
                     ->icon('heroicon-o-folder-open'),
+                NavigationGroup::make('Comptabilité')
+                    ->icon('heroicon-o-banknotes'),
                 NavigationGroup::make('Administration')
-                    ->icon('heroicon-o-cog-6-tooth')
+                    ->icon('heroicon-o-shield-check')
                     ->collapsed(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -76,13 +77,48 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([Authenticate::class])
+            // ═══ NOTIFICATIONS en BDD (mise à jour, etc.) ═══
             ->databaseNotifications()
+            ->databaseNotificationsPolling('60s')
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('17rem')
             ->maxContentWidth('full')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
-            // ═══ STYLES PREMIUM + WIDGET CLOUD SIDEBAR ═══
             ->renderHook('panels::head.end', fn () => view('filament.premium-styles'))
             ->renderHook('panels::sidebar.nav.start', fn () => view('filament.context-badge'));
+
+        // ═══ FILAMENT SHIELD — conditionnel ═══
+        // Si Shield est installé, l'activer automatiquement
+        if (class_exists(\BezhanSalleh\FilamentShield\FilamentShieldPlugin::class)) {
+            $panel->plugins([
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+                    ->gridColumns(['default' => 1, 'sm' => 2, 'lg' => 3])
+                    ->sectionColumnSpan(1)
+                    ->checkboxListColumns(['default' => 1, 'sm' => 2])
+                    ->resourceCheckboxListColumns(['default' => 1, 'sm' => 2]),
+            ]);
+        }
+
+        return $panel
+
+    ->plugins([
+        FilamentShieldPlugin::make()
+            ->gridColumns([
+                'default' => 1,
+                'sm' => 2,
+                'lg' => 3,
+            ])
+            ->sectionColumnSpan(1)
+            ->checkboxListColumns([
+                'default' => 1,
+                'sm' => 2,
+            ])
+            ->resourceCheckboxListColumns([
+                'default' => 1,
+                'sm' => 2,
+            ]),
+    ]);
+
+
     }
 }

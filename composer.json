@@ -6,7 +6,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.2",
-        "bezhansalleh/filament-shield": "^3.2",
+        "bezhansalleh/filament-shield": "^3.9",
         "filament/filament": "^3.2",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9",

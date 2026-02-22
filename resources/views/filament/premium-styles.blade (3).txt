@@ -44,7 +44,7 @@
 
     .fi-sidebar-nav .fi-sidebar-item.fi-active { background: rgba(212,168,83,0.12) !important; border-left: 3px solid var(--ach-gold) !important; }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-button,
-    .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-label { color: #020000 !important; font-weight: 700 !important; }
+    .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-label { color: #000000 !important; font-weight: 700 !important; }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-icon { color: var(--ach-gold) !important; opacity: 1; }
 
     .fi-sidebar-group-label {
@@ -149,24 +149,12 @@
     /* ═══ FORM, BOUTONS, BADGES ═══ */
     .fi-badge { font-weight: 700 !important; border-radius: 0.5rem !important; }
     .fi-fo-field-wrp .fi-input, .fi-fo-field-wrp .fi-select { border-radius: 0.625rem !important; transition: var(--ach-tr); }
-    .fi-fo-field-wrp .fi-input:focus-within { box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important; border-color: #6366f1 !important; }
-    .dark .fi-fo-field-wrp .fi-input:focus-within { box-shadow: 0 0 0 3px rgba(129,140,248,0.2) !important; }
+    .fi-fo-field-wrp .fi-input:focus-within { box-shadow: 0 0 0 3px rgb(255, 255, 255) !important; border-color: #07bdeb !important; }
+    .dark .fi-fo-field-wrp .fi-input:focus-within { box-shadow: 0 0 0 3px rgba(44, 206, 247, 0.2) !important; }
     @media(prefers-color-scheme:dark){ .fi-fo-field-wrp .fi-input:focus-within { box-shadow: 0 0 0 3px rgba(129,140,248,0.2) !important; } }
 
     .fi-btn { border-radius: 0.625rem !important; font-weight: 600 !important; transition: var(--ach-tr) !important; }
     .fi-btn:hover { transform: translateY(-1px); }
-
-    /* ═══ TEXTE BLANC sur tous les boutons colorés ═══ */
-    .fi-btn:not(.fi-btn-color-gray) {
-        color: #ffffff !important;
-    }
-    .fi-btn:not(.fi-btn-color-gray) span,
-    .fi-btn:not(.fi-btn-color-gray) .fi-btn-label {
-        color: #ffffff !important;
-    }
-    .fi-btn:not(.fi-btn-color-gray) svg {
-        color: #ffffff !important;
-    }
 
     /* ═══ MODAL ═══ */
     .fi-modal-content { border-radius: var(--ach-r) !important; }
@@ -188,7 +176,7 @@
     /* ═══ SCROLLBAR ═══ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.685); border-radius: 3px; }
     .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
     @media(prefers-color-scheme:dark){ ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
 

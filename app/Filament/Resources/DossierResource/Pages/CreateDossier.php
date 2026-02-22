@@ -23,6 +23,33 @@ class CreateDossier extends CreateRecord
             'op' => $data['ordre_paiement'] ?? 'NULL',
         ]);
 
+        // ═══ DÉTECTION DE DOUBLONS ═══
+        if (class_exists(\App\Services\DuplicateDetectionService::class)) {
+            $duplicates = \App\Services\DuplicateDetectionService::detect(
+                $data['ordre_paiement'] ?? null,
+                $data['beneficiaire'] ?? null,
+                (float) ($data['montant_engage'] ?? 0),
+                $data['date_dossier'] ?? null,
+                $data['imputation_id'] ?? null
+            );
+
+            if ($duplicates->isNotEmpty()) {
+                $warning = \App\Services\DuplicateDetectionService::formatWarning($duplicates);
+                \Filament\Notifications\Notification::make()
+                    ->title('⚠️ Doublon(s) potentiel(s) détecté(s)')
+                    ->body($warning)
+                    ->warning()
+                    ->persistent()
+                    ->send();
+
+                Log::warning('[CreateDossier] Doublons détectés', [
+                    'op' => $data['ordre_paiement'] ?? '',
+                    'count' => $duplicates->count(),
+                ]);
+                // On continue la création (l'utilisateur est averti)
+            }
+        }
+
         $allPdfPaths = [];
 
         // ═══ SOURCE 1 : Session PHP (scans LarascanScanner) ═══

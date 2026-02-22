@@ -276,14 +276,6 @@ class DossierResource extends Resource
                         ->view('filament.resources.dossier-resource.pages.pdf-viewer')
                         ->columnSpanFull()->visible(fn ($record) => $record->pdf_exists),
                 ]),
-            Infolists\Components\Section::make('📱 QR Code')
-                ->icon('heroicon-o-qr-code')
-                ->collapsed()
-                ->schema([
-                    Infolists\Components\ViewEntry::make('qr_code')->label('')
-                        ->view('filament.resources.dossier-resource.pages.qr-code-viewer')
-                        ->columnSpanFull(),
-                ]),
         ]);
     }
 

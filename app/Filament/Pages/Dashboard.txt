@@ -23,11 +23,6 @@ class Dashboard extends BaseDashboard
     {
         $this->exercice_id = WorkContextService::getExerciceId();
         $this->depense_id = WorkContextService::getDepenseId();
-
-        // Notification de mise à jour au login (si service disponible)
-        if (class_exists(\App\Services\UpdateNotificationService::class) && auth()->check()) {
-            \App\Services\UpdateNotificationService::notifyUserIfNeeded(auth()->user());
-        }
     }
 
     protected function getHeaderActions(): array
@@ -41,7 +36,7 @@ class Dashboard extends BaseDashboard
                 ->icon(WorkContextService::isSet() ? 'heroicon-o-check-circle' : 'heroicon-o-cog-6-tooth')
                 ->size('lg')
                 ->modalHeading('Sélection du contexte de travail')
-                ->modalDescription('Choisissez l\'exercice budgétaire et la catégorie de dépense.')
+                ->modalDescription('Choisissez l\'exercice budgétaire et la catégorie de dépense. Ce choix sera appliqué à toute l\'application.')
                 ->modalIcon('heroicon-o-adjustments-horizontal')
                 ->modalWidth('lg')
                 ->form([
@@ -54,7 +49,8 @@ class Dashboard extends BaseDashboard
                                 ->default($this->exercice_id)
                                 ->required()
                                 ->searchable()
-                                ->native(false),
+                                ->native(false)
+                                ->helperText('Exercice sur lequel vous travaillez'),
                             Select::make('depense_id')
                                 ->label('💰 Catégorie de dépense')
                                 ->options(Depense::all()->mapWithKeys(fn ($d) => [
@@ -63,7 +59,8 @@ class Dashboard extends BaseDashboard
                                 ->default($this->depense_id)
                                 ->required()
                                 ->searchable()
-                                ->native(false),
+                                ->native(false)
+                                ->helperText('Type de dépense principal'),
                         ]),
                 ])
                 ->action(function (array $data) {
@@ -75,7 +72,9 @@ class Dashboard extends BaseDashboard
                     Notification::make()
                         ->title('✅ Contexte de travail mis à jour')
                         ->body(WorkContextService::getSummary())
-                        ->success()->duration(3000)->send();
+                        ->success()
+                        ->duration(3000)
+                        ->send();
 
                     $this->redirect(static::getUrl());
                 }),
@@ -91,7 +90,6 @@ class Dashboard extends BaseDashboard
             \App\Filament\Widgets\CompletionRateChart::class,
             \App\Filament\Widgets\RecentDossiersWidget::class,
             \App\Filament\Widgets\CloudStatusWidget::class,
-            \App\Filament\Widgets\ExerciceComparisonWidget::class,
         ];
     }
 }

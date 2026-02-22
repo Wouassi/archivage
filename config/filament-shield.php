@@ -1,92 +1,56 @@
 <?php
 
+/**
+ * Config Filament Shield.
+ *
+ * Fichier : config/filament-shield.php
+ *
+ * Après installation de Shield (composer require bezhansalleh/filament-shield),
+ * publiez cette config :
+ *   php artisan vendor:publish --tag=filament-shield-config
+ * puis remplacez le contenu par celui-ci.
+ */
 return [
-    'shield_resource' => [
-        'should_register_navigation' => true,
-        'slug' => 'shield/roles',
-        'navigation_sort' => -1,
-        'navigation_badge' => true,
-        'navigation_group' => true,
-        'sub_navigation_position' => null,
-        'is_globally_searchable' => false,
-        'show_model_path' => true,
-        'is_scoped_to_tenant' => true,
-        'cluster' => null,
-    ],
-
-    'tenant_model' => null,
-
-    'auth_provider_model' => [
-        'fqcn' => 'App\\Models\\User',
-    ],
 
     'super_admin' => [
         'enabled' => true,
-        'name' => 'super_admin',
-        'define_via_gate' => false,
-        'intercept_gate' => 'before', // after
+        'name'    => 'super_admin',
     ],
 
-    'panel_user' => [
+    'filament_user' => [
         'enabled' => true,
-        'name' => 'panel_user',
+        'name'    => 'panel_user',
     ],
 
     'permission_prefixes' => [
         'resource' => [
-            'view',
-            'view_any',
-            'create',
-            'update',
-            'restore',
-            'restore_any',
-            'replicate',
-            'reorder',
-            'delete',
-            'delete_any',
-            'force_delete',
-            'force_delete_any',
+            'view', 'view_any', 'create', 'update',
+            'delete', 'delete_any', 'force_delete',
+            'force_delete_any', 'restore', 'restore_any',
+            'replicate', 'reorder',
         ],
-
-        'page' => 'page',
+        'page'   => 'page',
         'widget' => 'widget',
-    ],
-
-    'entities' => [
-        'pages' => true,
-        'widgets' => true,
-        'resources' => true,
-        'custom_permissions' => false,
-    ],
-
-    'generator' => [
-        'option' => 'policies_and_permissions',
-        'policy_directory' => 'Policies',
-        'policy_namespace' => 'Policies',
-    ],
-
-    'exclude' => [
-        'enabled' => true,
-
-        'pages' => [
-            'Dashboard',
-        ],
-
-        'widgets' => [
-            'AccountWidget', 'FilamentInfoWidget',
-        ],
-
-        'resources' => [],
-    ],
-
-    'discovery' => [
-        'discover_all_resources' => false,
-        'discover_all_widgets' => false,
-        'discover_all_pages' => false,
     ],
 
     'register_role_policy' => [
         'enabled' => true,
     ],
 
+    /*
+    |------------------------------------------------------------------
+    | Shield Resource (page de gestion des rôles)
+    |------------------------------------------------------------------
+    | Placement dans le groupe "Administration" du sidebar
+    | avec le label "Rôles utilisateurs"
+    */
+    'shield_resource' => [
+        'should_register_navigation' => false,
+        'slug'             => 'roles-utilisateurs',
+        'navigation_sort'  => 10,
+        'navigation_badge' => true,
+        'navigation_group' => 'Administration',
+        'is_globally_searchable' => false,
+        'cluster' => null,
+    ],
 ];

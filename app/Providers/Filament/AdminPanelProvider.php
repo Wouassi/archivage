@@ -22,14 +22,14 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('ArchiCompta Pro')
+            ->brandName('Archivage BUNEC')
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::Sky,
                 'success' => Color::Emerald,
                 'danger'  => Color::Rose,
                 'warning' => Color::Amber,
@@ -37,8 +37,9 @@ class AdminPanelProvider extends PanelProvider
                 'gray'    => Color::Slate,
             ])
             ->font('Inter')
+            // ═══ THÈME PAR DÉFAUT : SYSTÈME ═══
+            // darkMode(true) active le toggle, le navigateur détecte auto light/dark
             ->darkMode(true)
-            // ═══ ORDRE DES SECTIONS : Tableau de bord → Documents → Comptabilité → Administration ═══
             ->navigationGroups([
                 NavigationGroup::make('Tableau de bord')
                     ->icon('heroicon-o-chart-bar-square')
@@ -78,11 +79,25 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([Authenticate::class])
             ->databaseNotifications()
+            ->databaseNotificationsPolling('60s')
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('17rem')
             ->maxContentWidth('full')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->renderHook('panels::head.end', fn () => view('filament.premium-styles'))
             ->renderHook('panels::sidebar.nav.start', fn () => view('filament.context-badge'));
+
+        // ═══ FILAMENT SHIELD — dans Administration, nommé "Rôles utilisateurs" ═══
+        if (class_exists(\BezhanSalleh\FilamentShield\FilamentShieldPlugin::class)) {
+            $panel->plugins([
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+                    ->gridColumns(['default' => 1, 'sm' => 2, 'lg' => 3])
+                    ->sectionColumnSpan(1)
+                    ->checkboxListColumns(['default' => 1, 'sm' => 2])
+                    ->resourceCheckboxListColumns(['default' => 1, 'sm' => 2]),
+            ]);
+        }
+
+        return $panel;
     }
 }

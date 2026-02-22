@@ -44,7 +44,7 @@
 
     .fi-sidebar-nav .fi-sidebar-item.fi-active { background: rgba(212,168,83,0.12) !important; border-left: 3px solid var(--ach-gold) !important; }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-button,
-    .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-label { color: #020000 !important; font-weight: 700 !important; }
+    .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-label { color: #fff !important; font-weight: 700 !important; }
     .fi-sidebar-nav .fi-sidebar-item.fi-active .fi-sidebar-item-icon { color: var(--ach-gold) !important; opacity: 1; }
 
     .fi-sidebar-group-label {
@@ -156,18 +156,6 @@
     .fi-btn { border-radius: 0.625rem !important; font-weight: 600 !important; transition: var(--ach-tr) !important; }
     .fi-btn:hover { transform: translateY(-1px); }
 
-    /* ═══ TEXTE BLANC sur tous les boutons colorés ═══ */
-    .fi-btn:not(.fi-btn-color-gray) {
-        color: #ffffff !important;
-    }
-    .fi-btn:not(.fi-btn-color-gray) span,
-    .fi-btn:not(.fi-btn-color-gray) .fi-btn-label {
-        color: #ffffff !important;
-    }
-    .fi-btn:not(.fi-btn-color-gray) svg {
-        color: #ffffff !important;
-    }
-
     /* ═══ MODAL ═══ */
     .fi-modal-content { border-radius: var(--ach-r) !important; }
     .fi-modal-heading { color: var(--t1) !important; font-weight: 700 !important; }
@@ -191,13 +179,6 @@
     ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
     .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
     @media(prefers-color-scheme:dark){ ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
-
-    /* Scrollbar sidebar — dorée */
-    .fi-sidebar ::-webkit-scrollbar { width: 4px; }
-    .fi-sidebar ::-webkit-scrollbar-track { background: transparent; }
-    .fi-sidebar ::-webkit-scrollbar-thumb { background: rgba(212,168,83,0.4); border-radius: 3px; }
-    .fi-sidebar ::-webkit-scrollbar-thumb:hover { background: rgba(212,168,83,0.7); }
-    .fi-sidebar { scrollbar-color: rgba(212,168,83,0.4) transparent; scrollbar-width: thin; }
 
     /* ═══ ANIMATIONS ═══ */
     @keyframes fadeSlideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
